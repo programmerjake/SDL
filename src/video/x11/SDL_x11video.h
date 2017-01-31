@@ -68,6 +68,7 @@
 #include "SDL_x11mouse.h"
 #include "SDL_x11opengl.h"
 #include "SDL_x11window.h"
+#include "SDL_x11vulkan.h"
 
 /* Private display data */
 
@@ -132,6 +133,12 @@ typedef struct SDL_VideoData
 
 #if SDL_VIDEO_DRIVER_X11_HAS_XKBKEYCODETOKEYSYM
     XkbDescPtr xkb;
+#endif
+
+#if SDL_VULKAN_SUPPORTED
+    /* Vulkan variables only valid if _this->vulkan_config.loader_handle is not NULL */
+    void *vulkan_xlib_xcb_library;
+    PFN_XGetXCBConnection vulkan_XGetXCBConnection;
 #endif
 } SDL_VideoData;
 
