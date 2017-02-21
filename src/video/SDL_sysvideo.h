@@ -262,6 +262,15 @@ struct SDL_VideoDevice
 
     /* * * */
     /*
+     * Vulkan support
+     */
+    int (*Vulkan_LoadLibrary) (_THIS, const char *path);
+    void (*Vulkan_UnloadLibrary) (_THIS);
+    SDL_bool (*Vulkan_GetInstanceExtensions) (_THIS, SDL_Window *window, unsigned *count, const char **names);
+    SDL_bool (*Vulkan_CreateSurface) (_THIS, SDL_Window *window, SDL_vulkanInstance instance, SDL_vulkanSurface *surface);
+
+    /* * * */
+    /*
      * Event manager functions
      */
     void (*PumpEvents) (_THIS);
@@ -345,6 +354,17 @@ struct SDL_VideoDevice
     SDL_GLContext current_glctx;
     SDL_TLSID current_glwin_tls;
     SDL_TLSID current_glctx_tls;
+
+    /* * * */
+    /* Data used by the Vulkan drivers */
+    struct
+    {
+        void *vkGetInstanceProcAddr;
+        void *vkEnumerateInstanceExtensionProperties;
+        int loader_loaded;
+        char loader_path[256];
+        void *loader_handle;
+    } vulkan_config;
 
     /* * * */
     /* Data private to this driver */
