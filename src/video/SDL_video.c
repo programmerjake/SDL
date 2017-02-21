@@ -1321,7 +1321,7 @@ SDL_UpdateFullscreenMode(SDL_Window * window, SDL_bool fullscreen)
 }
 
 #define CREATE_FLAGS \
-    (SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_ALWAYS_ON_TOP | SDL_WINDOW_SKIP_TASKBAR | SDL_WINDOW_POPUP_MENU | SDL_WINDOW_UTILITY | SDL_WINDOW_TOOLTIP | SDL_WINDOW_VULKAN )
+    (SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_ALWAYS_ON_TOP | SDL_WINDOW_SKIP_TASKBAR | SDL_WINDOW_POPUP_MENU | SDL_WINDOW_UTILITY | SDL_WINDOW_TOOLTIP | SDL_WINDOW_VULKAN)
 
 static void
 SDL_FinishWindowCreation(SDL_Window *window, Uint32 flags)
@@ -1376,7 +1376,7 @@ SDL_CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags)
 
     /* Some platforms have OpenGL enabled by default */
 #if (SDL_VIDEO_OPENGL && __MACOSX__) || __IPHONEOS__ || __ANDROID__ || __NACL__
-    if (!_this->is_dummy) {
+    if (!_this->is_dummy && !(flags & SDL_WINDOW_VULKAN)) {
         flags |= SDL_WINDOW_OPENGL;
     }
 #endif
@@ -1386,6 +1386,24 @@ SDL_CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags)
             return NULL;
         }
         if (SDL_GL_LoadLibrary(NULL) < 0) {
+            return NULL;
+        }
+    }
+
+    if(flags & SDL_WINDOW_VULKAN)
+    {
+        if(!_this->Vulkan_CreateSurface)
+        {
+            SDL_SetError("No Vulkan support in video driver");
+            return NULL;
+        }
+        if(flags & SDL_WINDOW_OPENGL)
+        {
+            SDL_SetError("Vulkan and OpenGL not supported on same window");
+            return NULL;
+        }
+        if(SDL_Vulkan_LoadLibrary(NULL) < 0)
+        {
             return NULL;
         }
     }
@@ -1563,6 +1581,16 @@ SDL_RecreateWindow(SDL_Window * window, Uint32 flags)
         } else {
             SDL_GL_UnloadLibrary();
         }
+    }
+
+    if ((window->flags & SDL_WINDOW_VULKAN) != (flags & SDL_WINDOW_VULKAN)) {
+        SDL_SetError("Can't change SDL_WINDOW_VULKAN window flag");
+        return -1;
+    }
+
+    if ((window->flags & SDL_WINDOW_VULKAN) && (flags & SDL_WINDOW_OPENGL)) {
+        SDL_SetError("Vulkan and OpenGL not supported on same window");
+        return -1;
     }
 
     window->flags = ((flags & CREATE_FLAGS) | SDL_WINDOW_HIDDEN);
@@ -3903,6 +3931,117 @@ void SDL_OnApplicationDidBecomeActive()
             SDL_SendWindowEvent(window, SDL_WINDOWEVENT_RESTORED, 0, 0);
         }
     }
+}
+
+int SDL_Vulkan_LoadLibrary(const char *path)
+{
+    int retval;
+    if(!_this)
+    {
+        SDL_UninitializedVideo();
+        return -1;
+    }
+    if(_this->vulkan_config.loader_loaded)
+    {
+        if(path && SDL_strcmp(path, _this->vulkan_config.loader_path) != 0)
+        {
+            return SDL_SetError("Vulkan loader library already loaded");
+        }
+        retval = 0;
+    }
+    else
+    {
+        if(!_this->Vulkan_LoadLibrary)
+        {
+            return SDL_SetError("No Vulkan support in video driver");
+        }
+        retval = _this->Vulkan_LoadLibrary(_this, path);
+    }
+    if(retval == 0)
+    {
+        _this->vulkan_config.loader_loaded++;
+    }
+    return retval;
+}
+
+void *SDL_Vulkan_GetVkGetInstanceProcAddr(void)
+{
+    if(!_this)
+    {
+        SDL_UninitializedVideo();
+        return NULL;
+    }
+    if(!_this->vulkan_config.loader_loaded)
+    {
+        SDL_SetError("No Vulkan loader has been loaded");
+    }
+    return _this->vulkan_config.vkGetInstanceProcAddr;
+}
+
+void SDL_Vulkan_UnloadLibrary(void)
+{
+    if(!_this)
+    {
+        SDL_UninitializedVideo();
+        return;
+    }
+    if(_this->vulkan_config.loader_loaded > 0)
+    {
+        if(--_this->vulkan_config.loader_loaded > 0)
+        {
+            return;
+        }
+        if(_this->Vulkan_UnloadLibrary)
+        {
+            _this->Vulkan_UnloadLibrary(_this);
+        }
+    }
+}
+
+SDL_bool SDL_Vulkan_GetInstanceExtensions(SDL_Window *window, unsigned *count, const char **names)
+{
+    CHECK_WINDOW_MAGIC(window, SDL_FALSE);
+
+    if(!(window->flags & SDL_WINDOW_VULKAN))
+    {
+        SDL_SetError("The specified window isn't a Vulkan window");
+        return SDL_FALSE;
+    }
+
+    if(!count)
+    {
+        SDL_SetError("invalid count");
+        return SDL_FALSE;
+    }
+
+    return _this->Vulkan_GetInstanceExtensions(_this, window, count, names);
+}
+
+SDL_bool SDL_Vulkan_CreateSurface(SDL_Window *window,
+                                  SDL_vulkanInstance instance,
+                                  SDL_vulkanSurface *surface)
+{
+    CHECK_WINDOW_MAGIC(window, SDL_FALSE);
+
+    if(!(window->flags & SDL_WINDOW_VULKAN))
+    {
+        SDL_SetError("The specified window isn't a Vulkan window");
+        return SDL_FALSE;
+    }
+
+    if(!instance)
+    {
+        SDL_SetError("invalid instance");
+        return SDL_FALSE;
+    }
+
+    if(!surface)
+    {
+        SDL_SetError("invalid surface");
+        return SDL_FALSE;
+    }
+
+    return _this->Vulkan_CreateSurface(_this, window, instance, surface);
 }
 
 /* vi: set ts=4 sw=4 expandtab: */
