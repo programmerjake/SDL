@@ -23,7 +23,7 @@
 #ifndef _SDL_x11vulkan_h
 #define _SDL_x11vulkan_h
 
-#include "../SDL_vulkan.h"
+#include "../SDL_vulkan_helper.h"
 
 #if SDL_VULKAN_SUPPORTED
 
