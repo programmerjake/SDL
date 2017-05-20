@@ -3885,8 +3885,6 @@ SDL_ComputeDiagonalDPI(int hpix, int vpix, float hinches, float vinches)
 				   SDL_sqrt((double)den2));
 }
 
-<<<<<<< HEAD
-<<<<<<< 6606d4ead275a993b1a5550ef7881c2f5ffc78cf
 /*
  * Functions used by iOS application delegates
  */
