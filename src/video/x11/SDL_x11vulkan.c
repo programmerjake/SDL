@@ -50,7 +50,7 @@ int X11_Vulkan_LoadLibrary(_THIS, const char *path)
     _this->vulkan_config.loader_handle = SDL_LoadObject(path);
     if(!_this->vulkan_config.loader_handle)
         return -1;
-    SDL_strlcpy(_this->gl_config.driver_path, path, SDL_arraysize(_this->gl_config.driver_path));
+    SDL_strlcpy(_this->vulkan_config.loader_path, path, SDL_arraysize(_this->vulkan_config.loader_path));
     vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)SDL_LoadFunction(
         _this->vulkan_config.loader_handle, "vkGetInstanceProcAddr");
     if(!vkGetInstanceProcAddr)
