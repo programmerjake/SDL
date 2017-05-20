@@ -4044,4 +4044,15 @@ SDL_bool SDL_Vulkan_CreateSurface(SDL_Window *window,
     return _this->Vulkan_CreateSurface(_this, window, instance, surface);
 }
 
+void SDL_Vulkan_GetDrawableSize(SDL_Window * window, int *w, int *h)
+{
+#if SDL_VIDEO_DRIVER_UIKIT
+    UIKit_Mtl_GetDrawableSize(window, w, h);
+#elif SDL_VIDEO_DRIVER_COCOA
+    Cocoa_Mtl_GetDrawableSize(window, w, h);
+#else
+    SDL_GetWindowSize(window, w, h);
+#endif
+}
+
 /* vi: set ts=4 sw=4 expandtab: */
