@@ -289,8 +289,8 @@ static void loadInstanceFunctions(void)
 static void createSurface(void)
 {
     if(!SDL_Vulkan_CreateSurface(state->windows[0],
-                                 (SDL_vulkanInstance)vulkanContext.instance,
-                                 (SDL_vulkanSurface *)&vulkanContext.surface))
+                                 vulkanContext.instance,
+                                 &vulkanContext.surface))
     {
         vulkanContext.surface = VK_NULL_HANDLE;
         SDL_LogError(
