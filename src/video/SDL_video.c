@@ -4018,8 +4018,8 @@ SDL_bool SDL_Vulkan_GetInstanceExtensions(SDL_Window *window, unsigned *count, c
 }
 
 SDL_bool SDL_Vulkan_CreateSurface(SDL_Window *window,
-                                  SDL_vulkanInstance instance,
-                                  SDL_vulkanSurface *surface)
+                                  VkInstance instance,
+                                  VkSurfaceKHR *surface)
 {
     CHECK_WINDOW_MAGIC(window, SDL_FALSE);
 
