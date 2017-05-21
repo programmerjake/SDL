@@ -108,20 +108,20 @@ extern DECLSPEC void SDLCALL SDL_Vulkan_UnloadLibrary(void);
  *
  *  \return \c SDL_TRUE on success, \c SDL_FALSE on error.
  *
- *  If \a names is \c NULL, then return the number of required Vulkan instance
- *  extensions in \a count.
- *  If \a names is not \c NULL, then store the names of the required Vulkan
- *  instance extensions in \a names. The incoming value of \a count specifies
- *  the length of the \a names array. SDL_Vulkan_GetInstanceExtensions will
- *  write no more than \a count instance extensions.
- *
- *  <!-- XXX This is probably not compatible with Tizen. Robustness should trump
- *  Tizen. -->
+ *  If \a pNames is \c NULL, then the number of required Vulkan instance
+ *  extensions is returned in pCount. Otherwise, \a pCount must point to a
+ *  variable set to the number of elements in the \a pNames array, and on
+ *  return the variable is overwritten with the number of names actually
+ *  written to \a pNames. If \a pCount is less than the number of required
+ *  extensions, at most \a pCount structures will be written. If \a pCount
+ *  is smaller than the number of required extensions, \c SDL_FALSE will be
+ *  returned instead of \c SDL_TRUE, to indicate that not all the required
+ *  extensions were returned.
  *
  *  \note The returned list of extensions will contain \c VK_KHR_surface
  *        and zero or more platform specific extensions
  *
- *  \note The extension names queried here must be passed along when calling
+ *  \note The extension names queried here must be enabled when calling
  *        VkCreateInstance, otherwise surface creation will fail.
  *
  *  \note \c window should have been created with the \c SDL_WINDOW_VULKAN flag.
@@ -141,8 +141,6 @@ extern DECLSPEC void SDLCALL SDL_Vulkan_UnloadLibrary(void);
  *  const char **names = malloc(sizeof(const char *) * extensionCount);
  *  if(!names)
  *      handle_error();
- *
- *  // don't change count here for compatibility with Tizen
  *
  *  // get names of required extensions
  *  if(!SDL_Vulkan_GetInstanceExtensions(window, &count, names))
@@ -167,8 +165,8 @@ extern DECLSPEC void SDLCALL SDL_Vulkan_UnloadLibrary(void);
  */
 extern DECLSPEC SDL_bool SDLCALL SDL_Vulkan_GetInstanceExtensions(
 														SDL_Window *window,
-														unsigned *count,
-														const char **names);
+														unsigned *pCount,
+														const char **pNames);
 
 /**
  *  \brief Create a Vulkan rendering surface for a window.
