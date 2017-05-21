@@ -159,8 +159,8 @@ SDL_bool X11_Vulkan_GetInstanceExtensions(_THIS,
 
 SDL_bool X11_Vulkan_CreateSurface(_THIS,
                                   SDL_Window *window,
-                                  SDL_vulkanInstance instance,
-                                  SDL_vulkanSurface *surface)
+                                  VkInstance instance,
+                                  VkSurfaceKHR *surface)
 {
     SDL_VideoData *videoData = (SDL_VideoData *)_this->driverdata;
     SDL_WindowData *windowData = (SDL_WindowData *)window->driverdata;
