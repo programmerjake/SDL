@@ -23,9 +23,12 @@
 #ifndef _SDL_x11vulkan_h
 #define _SDL_x11vulkan_h
 
-#include "../SDL_vulkan_helper.h"
+#include "../SDL_vulkan_internal.h"
 
 #if SDL_VULKAN_SUPPORTED
+
+typedef struct xcb_connection_t xcb_connection_t;
+typedef xcb_connection_t *(*PFN_XGetXCBConnection)(Display *dpy);
 
 int X11_Vulkan_LoadLibrary(_THIS, const char *path);
 void X11_Vulkan_UnloadLibrary(_THIS);
