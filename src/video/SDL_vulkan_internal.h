@@ -27,11 +27,11 @@
 
 // Android does not support Vulkan in native code using the "armeabi" ABI.
 #if defined(__ANDROID__) && defined(__ARM_EABI__) && !defined(__ARM_ARCH_7A__)
-#define SDL_VULKAN_SUPPORTED 0
+#undef SDL_VIDEO_VULKAN_SURFACE
+#define SDL_VIDEO_VULKAN_SURFACE 0
 #elif !(HAVE_STDDEF_H || HAVE_LIBC) || defined(SDL_LOADSO_DISABLED)
-#define SDL_VULKAN_SUPPORTED 0
-#else
-#define SDL_VULKAN_SUPPORTED 1
+#undef SDL_VIDEO_VULKAN_SURFACE
+#define SDL_VIDEO_VULKAN_SURFACE 0
 #endif
 
 #if SDL_VIDEO_DRIVER_ANDROID
@@ -55,7 +55,7 @@
 #define VK_USE_PLATFORM_XCB_KHR
 #endif
 
-#if SDL_VULKAN_SUPPORTED
+#if SDL_VIDEO_VULKAN_SURFACE
 
 /* Need vulkan.h for the following declarations. Must ensure the first
  * inclusion of vulkan has the appropriate USE_PLATFORM defined hence
