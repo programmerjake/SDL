@@ -23,7 +23,7 @@
 #include "SDL_vulkan_internal.h"
 #include "SDL_error.h"
 
-#if SDL_VULKAN_SUPPORTED
+#if SDL_VIDEO_VULKAN_SURFACE
 
 enum
 {

@@ -28,17 +28,12 @@
 #include "SDL_loadso.h"
 #include "SDL_x11vulkan.h"
 
-#if SDL_VULKAN_SUPPORTED
+#if SDL_VIDEO_VULKAN_SURFACE
 
-#define VK_USE_PLATFORM_XLIB_KHR
-#define VK_USE_PLATFORM_XCB_KHR
 #include <X11/Xlib.h>
 //#include <xcb/xcb.h>
 typedef uint32_t xcb_window_t;
 typedef uint32_t xcb_visualid_t;
-
-#define VK_NO_PROTOTYPES
-#include "vulkan/vulkan.h"
 
 int X11_Vulkan_LoadLibrary(_THIS, const char *path)
 {
