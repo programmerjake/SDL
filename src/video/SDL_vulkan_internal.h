@@ -22,6 +22,7 @@
 #define _SDL_vulkan_internal_h
 
 #include "../SDL_internal.h"
+
 #include "SDL_stdinc.h"
 
 // Android does not support Vulkan in native code using the "armeabi" ABI.
@@ -52,17 +53,29 @@
 #if SDL_VIDEO_DRIVER_X11
 #define VK_USE_PLATFORM_XLIB_KHR
 #define VK_USE_PLATFORM_XCB_KHR
-#include <X11/Xlib.h>
-//#include <xcb/xcb.h>
-typedef struct xcb_connection_t xcb_connection_t;
-typedef uint32_t xcb_window_t;
-typedef uint32_t xcb_visualid_t;
-typedef xcb_connection_t *(*PFN_XGetXCBConnection)(Display *dpy);
 #endif
 
 #if SDL_VULKAN_SUPPORTED
+
+/* Need vulkan.h for the following declarations. Must ensure the first
+ * inclusion of vulkan has the appropriate USE_PLATFORM defined hence
+ * the above. */
 #define VK_NO_PROTOTYPES
 #include "vulkan/vulkan.h"
+
+extern const char *SDL_Vulkan_GetResultString(VkResult result);
+
+extern VkExtensionProperties *SDL_Vulkan_CreateInstanceExtensionsList(
+    PFN_vkEnumerateInstanceExtensionProperties vkEnumerateInstanceExtensionProperties,
+    Uint32 *extensionCount); /* free returned list with SDL_free */
+
+/* Implements functionality of SDL_Vulkan_GetInstanceExtensions for a list of
+ * names passed in nameCount and names. */
+extern SDL_bool SDL_Vulkan_GetInstanceExtensions_Helper(unsigned *userCount,
+                                                        const char **userNames,
+                                                        unsigned nameCount,
+                                                        const char *const *names);
+
 #endif
 
 #endif

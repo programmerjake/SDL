@@ -30,6 +30,16 @@
 
 #if SDL_VULKAN_SUPPORTED
 
+#define VK_USE_PLATFORM_XLIB_KHR
+#define VK_USE_PLATFORM_XCB_KHR
+#include <X11/Xlib.h>
+//#include <xcb/xcb.h>
+typedef uint32_t xcb_window_t;
+typedef uint32_t xcb_visualid_t;
+
+#define VK_NO_PROTOTYPES
+#include "vulkan/vulkan.h"
+
 int X11_Vulkan_LoadLibrary(_THIS, const char *path)
 {
     SDL_VideoData *videoData = (SDL_VideoData *)_this->driverdata;
@@ -79,7 +89,8 @@ int X11_Vulkan_LoadLibrary(_THIS, const char *path)
     SDL_free(extensions);
     if(!hasSurfaceExtension)
     {
-        SDL_SetError("Vulkan doesn't implement the " VK_KHR_SURFACE_EXTENSION_NAME " extension");
+        SDL_SetError("Installed Vulkan doesn't implement the "
+        		     VK_KHR_SURFACE_EXTENSION_NAME " extension");
         goto fail;
     }
     if(hasXlibSurfaceExtension)
@@ -88,8 +99,9 @@ int X11_Vulkan_LoadLibrary(_THIS, const char *path)
     }
     else if(!hasXCBSurfaceExtension)
     {
-        SDL_SetError("Vulkan doesn't implement either of the " VK_KHR_XCB_SURFACE_EXTENSION_NAME
-                     " extension or the " VK_KHR_XLIB_SURFACE_EXTENSION_NAME " extension");
+        SDL_SetError("Installed Vulkan doesn't implement either the "
+        		     VK_KHR_XCB_SURFACE_EXTENSION_NAME "extension or the "
+					 VK_KHR_XLIB_SURFACE_EXTENSION_NAME " extension");
         goto fail;
     }
     else
