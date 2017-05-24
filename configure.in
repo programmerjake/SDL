@@ -2245,6 +2245,37 @@ CheckEmscriptenGLES()
     fi
 }
 
+dnl Check to see if Vulkan surface support is desired
+AC_ARG_ENABLE(video-vulkan,
+AC_HELP_STRING([--enable-video-vulkan], [include Vulkan surface support [[default=yes]]]),
+              , enable_video_vulkan=yes)
+
+dnl Find Vulkan Header 
+CheckVulkan()
+{
+    if test x$enable_video = xyes -a x$enable_video_vulkan = xyes; then
+        vsdk_include_dir="${VULKAN_SDK}/include"
+        vulkan_header="vulkan/vulkan.h"
+        AC_MSG_CHECKING(for Vulkan support)
+	save_CPPFLAGS="$CPPFLAGS"
+	CPPFLAGS="${save_CPPFLAGS} -I$vsdk_include_dir"
+        AC_CHECK_HEADER($vulkan_header,
+                        have_vulkan_hdr=yes,
+                        have_vulkan_hdr=no)
+        CPPFLAGS="$save_CPPFLAGS"
+    fi
+    if test x$have_vulkan_hdr = xyes; then
+        # vulkan.h has been found in either $VULKAN_SDK/include or along the
+        # the standard include path. Unfortunately there seems no easy
+        # way to find out which, so...
+        if test -n "$VULKAN_SDK" -a -f "$vsdk_include_dir/$vulkan_header"; then 
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -I$vsdk_include_dir"
+        fi
+        AC_DEFINE(SDL_VIDEO_VULKAN_SURFACE, 1, [ ])
+        SUMMARY_video="${SUMMARY_video} vulkan"
+    fi
+}
+
 dnl See if we can use the new unified event interface in Linux 2.4
 CheckInputEvents()
 {
@@ -3045,6 +3076,7 @@ case "$host" in
         CheckDirectFB
         CheckOpenGLX11
         CheckOpenGLESX11
+        CheckVulkan
         CheckMir
         CheckWayland
         CheckLibUDev
@@ -3181,6 +3213,7 @@ case "$host" in
         CheckWINDOWS
         CheckWINDOWSGL
         CheckWINDOWSGLES
+        CheckVulkan
         CheckDIRECTX
 
         # Set up the core platform files
@@ -3357,6 +3390,7 @@ AC_HELP_STRING([--enable-render-d3d], [enable the Direct3D render driver [[defau
         CheckDummyAudio
         CheckDLOPEN
         CheckPTHREAD
+        CheckVulkan
 
         # Set up files for the audio library
         if test x$enable_audio = xyes; then
@@ -3439,6 +3473,7 @@ AC_HELP_STRING([--enable-render-d3d], [enable the Direct3D render driver [[defau
         CheckX11
         CheckMacGL
         CheckOpenGLX11
+        CheckVulkan
         CheckPTHREAD
 
         # Set up files for the audio library
