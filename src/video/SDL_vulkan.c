@@ -25,11 +25,13 @@
 
 #if SDL_VIDEO_VULKAN_SURFACE
 
+#if VK_HEADER_VERSION < 22
 enum
 {
     VK_ERROR_FRAGMENTED_POOL = -12,
     VK_ERROR_OUT_OF_POOL_MEMORY_KHR = -1000069000
 };
+#endif
 
 extern const char *SDL_Vulkan_GetResultString(VkResult result)
 {
