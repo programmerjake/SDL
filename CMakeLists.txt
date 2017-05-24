@@ -1431,6 +1431,7 @@ elseif(HAIKU)
 endif()
 
 if(VIDEO_VULKAN AND HAVE_VULKAN_H)
+  list(APPEND EXTRA_CFLAGS "-I${VULKAN_SDK}/include")
   set(SDL_VIDEO_VULKAN_SURFACE 1)
 endif()
 
