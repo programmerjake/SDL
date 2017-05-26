@@ -33,7 +33,7 @@ enum
 };
 #endif
 
-extern const char *SDL_Vulkan_GetResultString(VkResult result)
+const char *SDL_Vulkan_GetResultString(VkResult result)
 {
     switch((int)result)
     {
@@ -98,7 +98,7 @@ extern const char *SDL_Vulkan_GetResultString(VkResult result)
     return "VK_<Unknown>";
 }
 
-extern VkExtensionProperties *SDL_Vulkan_CreateInstanceExtensionsList(
+VkExtensionProperties *SDL_Vulkan_CreateInstanceExtensionsList(
     PFN_vkEnumerateInstanceExtensionProperties vkEnumerateInstanceExtensionProperties,
     Uint32 *extensionCount)
 {
