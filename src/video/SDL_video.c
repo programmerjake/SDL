@@ -1394,7 +1394,8 @@ SDL_CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags)
     {
         if(!_this->Vulkan_CreateSurface)
         {
-            SDL_SetError("No Vulkan support in video driver");
+            SDL_SetError("Vulkan support is either not configured in SDL "
+            		     "or not available in video driver");
             return NULL;
         }
         if(flags & SDL_WINDOW_OPENGL)
@@ -3933,6 +3934,8 @@ void SDL_OnApplicationDidBecomeActive()
     }
 }
 
+#define NOT_A_VULKAN_WINDOW "The specified window isn't a Vulkan window."
+
 int SDL_Vulkan_LoadLibrary(const char *path)
 {
     int retval;
@@ -4004,7 +4007,7 @@ SDL_bool SDL_Vulkan_GetInstanceExtensions(SDL_Window *window, unsigned *count, c
 
     if(!(window->flags & SDL_WINDOW_VULKAN))
     {
-        SDL_SetError("The specified window isn't a Vulkan window");
+        SDL_SetError(NOT_A_VULKAN_WINDOW);
         return SDL_FALSE;
     }
 
@@ -4025,7 +4028,7 @@ SDL_bool SDL_Vulkan_CreateSurface(SDL_Window *window,
 
     if(!(window->flags & SDL_WINDOW_VULKAN))
     {
-        SDL_SetError("The specified window isn't a Vulkan window");
+        SDL_SetError(NOT_A_VULKAN_WINDOW);
         return SDL_FALSE;
     }
 
@@ -4046,12 +4049,19 @@ SDL_bool SDL_Vulkan_CreateSurface(SDL_Window *window,
 
 void SDL_Vulkan_GetDrawableSize(SDL_Window * window, int *w, int *h)
 {
+    CHECK_WINDOW_MAGIC(window,);
+
+    if (_this->Vulkan_GetDrawableSize) {
+        _this->Vulkan_GetDrawableSize(_this, window, w, h);
+    } else {
+        SDL_GetWindowSize(window, w, h);
+    }
+#if 0
 #if SDL_VIDEO_DRIVER_UIKIT
     UIKit_Mtl_GetDrawableSize(window, w, h);
 #elif SDL_VIDEO_DRIVER_COCOA
     Cocoa_Mtl_GetDrawableSize(window, w, h);
-#else
-    SDL_GetWindowSize(window, w, h);
+#endif
 #endif
 }
 
