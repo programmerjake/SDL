@@ -36,19 +36,21 @@
 
 #if SDL_VIDEO_DRIVER_ANDROID
 #define VK_USE_PLATFORM_ANDROID_KHR
-#include <android/native_window.h>
+#endif
+#if SDL_VIDEO_DRIVER_COCOA
+#define VK_USE_PLATFORM_MACOS_MVK
 #endif
 #if SDL_VIDEO_DRIVER_MIR
 #define VK_USE_PLATFORM_MIR_KHR
-#include <mir_toolkit/client_types.h>
+#endif
+#if SDL_VIDEO_DRIVER_UIKIT
+#define VK_USE_PLATFORM_IOS_MVK
 #endif
 #if SDL_VIDEO_DRIVER_WAYLAND
 #define VK_USE_PLATFORM_WAYLAND_KHR
-#include <wayland-client.h>
 #endif
 #if SDL_VIDEO_DRIVER_WINDOWS
 #define VK_USE_PLATFORM_WIN32_KHR
-#include <windows.h>
 #endif
 #if SDL_VIDEO_DRIVER_X11
 #define VK_USE_PLATFORM_XLIB_KHR
