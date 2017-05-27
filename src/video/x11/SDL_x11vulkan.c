@@ -28,7 +28,7 @@
 #include "SDL_loadso.h"
 #include "SDL_x11vulkan.h"
 
-#if SDL_VIDEO_VULKAN_SURFACE
+#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_X11
 
 #include <X11/Xlib.h>
 //#include <xcb/xcb.h>
@@ -187,8 +187,8 @@ SDL_bool X11_Vulkan_CreateSurface(_THIS,
         VkResult result;
         if(!vkCreateXcbSurfaceKHR)
         {
-            SDL_SetError("Vulkan instance does not have " VK_KHR_XCB_SURFACE_EXTENSION_NAME
-                         " extension");
+    		SDL_SetError(VK_KHR_XCB_SURFACE_EXTENSION_NAME
+    				     " extension is not enabled in the Vulkan instance.");
             return SDL_FALSE;
         }
         createInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
@@ -199,7 +199,8 @@ SDL_bool X11_Vulkan_CreateSurface(_THIS,
             return SDL_FALSE;
         }
         createInfo.window = (xcb_window_t)windowData->xwindow;
-        result = vkCreateXcbSurfaceKHR(instance, &createInfo, NULL, (VkSurfaceKHR *)surface);
+        result = vkCreateXcbSurfaceKHR(instance, &createInfo,
+        		                       NULL, surface);
         if(result != VK_SUCCESS)
         {
             SDL_SetError("vkCreateXcbSurfaceKHR failed: %s", SDL_Vulkan_GetResultString(result));
@@ -216,14 +217,15 @@ SDL_bool X11_Vulkan_CreateSurface(_THIS,
         VkResult result;
         if(!vkCreateXlibSurfaceKHR)
         {
-            SDL_SetError("Vulkan instance does not have " VK_KHR_XLIB_SURFACE_EXTENSION_NAME
-                         " extension");
+    		SDL_SetError(VK_KHR_XLIB_SURFACE_EXTENSION_NAME
+    				     " extension is not enabled in the Vulkan instance.");
             return SDL_FALSE;
         }
         createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
         createInfo.dpy = videoData->display;
         createInfo.window = (xcb_window_t)windowData->xwindow;
-        result = vkCreateXlibSurfaceKHR(instance, &createInfo, NULL, (VkSurfaceKHR *)surface);
+        result = vkCreateXlibSurfaceKHR(instance, &createInfo,
+        		                        NULL, surface);
         if(result != VK_SUCCESS)
         {
             SDL_SetError("vkCreateXlibSurfaceKHR failed: %s", SDL_Vulkan_GetResultString(result));
