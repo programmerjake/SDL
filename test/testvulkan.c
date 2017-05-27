@@ -83,11 +83,13 @@ VULKAN_FUNCTIONS()
 #undef VULKAN_INSTANCE_FUNCTION
 static PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = NULL;
 
+#if VK_HEADER_VERSION < 22
 enum
 {
     VK_ERROR_FRAGMENTED_POOL = -12,
     VK_ERROR_OUT_OF_POOL_MEMORY_KHR = -1000069000
 };
+#endif
 
 static const char *getVulkanResultString(VkResult result)
 {
