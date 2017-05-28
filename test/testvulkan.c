@@ -832,7 +832,7 @@ static void recordPipelineImageBarrier(VkCommandBuffer commandBuffer,
                                        VkImageLayout destLayout,
                                        VkImage image)
 {
-    VkImageMemoryBarrier barrier;
+    VkImageMemoryBarrier barrier = {};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.srcAccessMask = sourceAccessMask;
     barrier.dstAccessMask = destAccessMask;
@@ -887,7 +887,7 @@ static void rerecordCommandBuffer(uint32_t frameIndex, const VkClearColorValue *
                                VK_IMAGE_LAYOUT_UNDEFINED,
                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                image);
-    VkImageSubresourceRange clearRange;
+    VkImageSubresourceRange clearRange = {};
     clearRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     clearRange.baseMipLevel = 0;
     clearRange.levelCount = 1;
