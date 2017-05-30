@@ -20,25 +20,29 @@
 */
 #include "../../SDL_internal.h"
 
-#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_COCOA
-
-#include "SDL_waylandvideo.h"
-#include "SDL_waylandwindow.h"
+#include "SDL_cocoavideo.h"
+#include "SDL_cocoawindow.h"
 #include "SDL_assert.h"
 
 #include "SDL_loadso.h"
-#include "SDL_waylandvulkan.h"
+#include "SDL_cocoavulkan.h"
 #include "SDL_syswm.h"
+
+#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_COCOA
+
+typedef struct _SDL_metalview SDL_metalview;
+SDL_metalview* Cocoa_Mtl_AddMetalView(SDL_Window* window);
+void Cocoa_Mtl_GetDrawableSize(SDL_Window*, int* w, int* h);
 
 // XXX How to handle $VULKAN_SDK? Just need in $PATH?
 #define DEFAULT_MOLTENVK  "MoltenVK.framework/Libraries/MoltenVK.dylib"
 
-int Wayland_Vulkan_LoadLibrary(_THIS, const char *path)
+int Cocoa_Vulkan_LoadLibrary(_THIS, const char *path)
 {
     VkExtensionProperties *extensions = NULL;
     Uint32 extensionCount = 0;
     SDL_bool hasSurfaceExtension = SDL_FALSE;
-    SDL_bool hasMvkSurfaceExtension = SDL_FALSE;
+    SDL_bool hasMacOSSurfaceExtension = SDL_FALSE;
     PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = NULL;
     if(_this->vulkan_config.loader_handle)
         return SDL_SetError("MoltenVK/Vulkan already loaded");
@@ -73,7 +77,7 @@ int Wayland_Vulkan_LoadLibrary(_THIS, const char *path)
         if(SDL_strcmp(VK_KHR_SURFACE_EXTENSION_NAME, extensions[i].extensionName) == 0)
             hasSurfaceExtension = SDL_TRUE;
         else if(SDL_strcmp(VK_MVK_MACOS_SURFACE_EXTENSION_NAME, extensions[i].extensionName) == 0)
-            hasMvkSurfaceExtension = SDL_TRUE;
+            hasMacOSSurfaceExtension = SDL_TRUE;
     }
     SDL_free(extensions);
     if(!hasSurfaceExtension)
@@ -82,7 +86,7 @@ int Wayland_Vulkan_LoadLibrary(_THIS, const char *path)
         		     VK_KHR_SURFACE_EXTENSION_NAME " extension");
         goto fail;
     }
-    else if(!hasWaylandSurfaceExtension)
+    else if(!hasMacOSSurfaceExtension)
     {
         SDL_SetError("Installed MoltenVK/Vulkan doesn't implement the "
         		     VK_MVK_MACOS_SURFACE_EXTENSION_NAME "extension");
@@ -96,7 +100,7 @@ fail:
     return -1;
 }
 
-void Wayland_Vulkan_UnloadLibrary(_THIS)
+void Cocoa_Vulkan_UnloadLibrary(_THIS)
 {
     if(_this->vulkan_config.loader_handle)
     {
@@ -105,12 +109,12 @@ void Wayland_Vulkan_UnloadLibrary(_THIS)
     }
 }
 
-SDL_bool Wayland_Vulkan_GetInstanceExtensions(_THIS,
+SDL_bool Cocoa_Vulkan_GetInstanceExtensions(_THIS,
                                           SDL_Window *window,
                                           unsigned *count,
                                           const char **names)
 {
-    static const char *const extensionsForWayland[] = {
+    static const char *const extensionsForCocoa[] = {
         VK_KHR_SURFACE_EXTENSION_NAME, VK_MVK_MACOS_SURFACE_EXTENSION_NAME
     };
     if(!_this->vulkan_config.loader_handle)
@@ -119,19 +123,18 @@ SDL_bool Wayland_Vulkan_GetInstanceExtensions(_THIS,
         return SDL_FALSE;
     }
     return SDL_Vulkan_GetInstanceExtensions_Helper(
-            count, names, SDL_arraysize(extensionsForWayland),
-			extensionsForWayland);
+            count, names, SDL_arraysize(extensionsForCocoa),
+			extensionsForCocoa);
 }
 
-SDL_bool Wayland_Vulkan_CreateSurface(_THIS,
+SDL_bool Cocoa_Vulkan_CreateSurface(_THIS,
                                   SDL_Window *window,
                                   VkInstance instance,
                                   VkSurfaceKHR *surface)
 {
-    SDL_WindowData *windowData = (SDL_WindowData *)window->driverdata;
     PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
     	(PFN_vkGetInstanceProcAddr)_this->vulkan_config.vkGetInstanceProcAddr;
-	PFN_vkCreateMacOSSurfaceMVK vkCreateWaylandSurfaceKHR =
+	PFN_vkCreateMacOSSurfaceMVK vkCreateMacOSSurfaceMVK =
 		(PFN_vkCreateMacOSSurfaceMVK)vkGetInstanceProcAddr(
 											(VkInstance)instance,
 											"vkCreateMacOSSurfaceMVK");
@@ -153,10 +156,8 @@ SDL_bool Wayland_Vulkan_CreateSurface(_THIS,
 	createInfo.sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
 	createInfo.pNext = NULL;
 	createInfo.flags = 0;
-	// XXX FIX ME
-	createInfo.display = windowData->waylandData->display;
-	createInfo.surface =  windowData->surface;
-	result = vkCreateWaylandSurfaceKHR(instance, &createInfo,
+	createInfo.pView = Cocoa_Mtl_AddMetalView(window);
+	result = vkCreateMacOSSurfaceMVK(instance, &createInfo,
 									   NULL, surface);
 	if(result != VK_SUCCESS)
 	{
@@ -167,12 +168,10 @@ SDL_bool Wayland_Vulkan_CreateSurface(_THIS,
 	return SDL_TRUE;
 }
 
-void Cocoa_Vulkan_GetDrawableSize(_THIS, SDL_window *window, int *w, int *h)
+void Cocoa_Vulkan_GetDrawableSize(_THIS, SDL_Window *window, int *w, int *h)
 {
-
+    Cocoa_Mtl_GetDrawableSize(window, w, h);
 }
-
-
 
 #endif
 

@@ -39,7 +39,7 @@ SDL_bool Cocoa_Vulkan_CreateSurface(_THIS,
                                   VkInstance instance,
                                   VkSurfaceKHR *surface);
 
-void Cocoa_Vulkan_GetDrawableSize(_THIS, SDL_window *window, int *w, int *h);
+void Cocoa_Vulkan_GetDrawableSize(_THIS, SDL_Window *window, int *w, int *h);
 
 #endif
 
