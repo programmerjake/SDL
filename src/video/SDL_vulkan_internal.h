@@ -29,7 +29,8 @@
 #if defined(__ANDROID__) && defined(__ARM_EABI__) && !defined(__ARM_ARCH_7A__)
 #undef SDL_VIDEO_VULKAN_SURFACE
 #define SDL_VIDEO_VULKAN_SURFACE 0
-#elif !(HAVE_STDDEF_H || HAVE_LIBC) || defined(SDL_LOADSO_DISABLED)
+#endif
+#if defined(SDL_LOADSO_DISABLED)
 #undef SDL_VIDEO_VULKAN_SURFACE
 #define SDL_VIDEO_VULKAN_SURFACE 0
 #endif
@@ -60,7 +61,7 @@
 #if SDL_VIDEO_VULKAN_SURFACE
 
 /* Need vulkan.h for the following declarations. Must ensure the first
- * inclusion of vulkan has the appropriate USE_PLATFORM defined hence
+ * inclusion of vulkan has the appropriate USE_PLATFORM defined, hence
  * the above. */
 #define VK_NO_PROTOTYPES
 #include "vulkan/vulkan.h"
