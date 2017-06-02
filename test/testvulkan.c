@@ -651,7 +651,8 @@ static SDL_bool createSwapchain(void)
 {
     // pick an image count
     vulkanContext.swapchainDesiredImageCount = vulkanContext.surfaceCapabilities.minImageCount + 1;
-    if(vulkanContext.swapchainDesiredImageCount > vulkanContext.surfaceCapabilities.maxImageCount)
+    if(vulkanContext.swapchainDesiredImageCount > vulkanContext.surfaceCapabilities.maxImageCount
+       && vulkanContext.surfaceCapabilities.maxImageCount > 0)
         vulkanContext.swapchainDesiredImageCount = vulkanContext.surfaceCapabilities.maxImageCount;
 
     // pick a format
