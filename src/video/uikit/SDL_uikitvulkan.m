@@ -20,7 +20,7 @@
 */
 #include "../../SDL_internal.h"
 
-#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_COCOA
+#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_UIKIT
 
 #include "SDL_uikitvideo.h"
 #include "SDL_uikitwindow.h"
@@ -28,13 +28,10 @@
 
 #include "SDL_loadso.h"
 #include "SDL_uikitvulkan.h"
+#include "SDL_uikitmetalview.h"
 #include "SDL_syswm.h"
 
-SDL_metalview* UIKit_Mtl_AddMetalView(SDL_Window* window);
-void UIKit_Mtl_GetDrawableSize(SDL_Window*, int* w, int* h);
-
-// XXX How to handle $VULKAN_SDK? Just need in $PATH?
-#define DEFAULT_MOLTENVK  "MoltenVK.framework/Libraries/MoltenVK.dylib"
+#include <dlfcn.h>
 
 int UIKit_Vulkan_LoadLibrary(_THIS, const char *path)
 {
@@ -43,28 +40,39 @@ int UIKit_Vulkan_LoadLibrary(_THIS, const char *path)
     SDL_bool hasSurfaceExtension = SDL_FALSE;
     SDL_bool hasIOSSurfaceExtension = SDL_FALSE;
     PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = NULL;
+
     if(_this->vulkan_config.loader_handle)
         return SDL_SetError("MoltenVK/Vulkan already loaded");
 
-    /* Load the Vulkan loader library */
-    if(!path)
-        path = SDL_getenv("SDL_VULKAN_LIBRARY");
-    if(!path)
-        path = DEFAULT_MOLTENVK;
-    _this->vulkan_config.loader_handle = SDL_LoadObject(path);
-    if(!_this->vulkan_config.loader_handle)
-        return -1;
-    SDL_strlcpy(_this->vulkan_config.loader_path, path, SDL_arraysize(_this->vulkan_config.loader_path));
-    vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)SDL_LoadFunction(
-        _this->vulkan_config.loader_handle, "vkGetInstanceProcAddr");
+    /* There is no shared MoltenVK/Vulkan dylib on iOS. It is statically
+     * linked to the app.
+     */
+    if (path != NULL)
+    {
+        return SDL_SetError("iOS Vulkan Load Library just here for compatibility");
+    }
+
+    _this->vulkan_config.loader_handle = RTLD_SELF;
+
+    vkGetInstanceProcAddr =
+        (PFN_vkGetInstanceProcAddr)dlsym(RTLD_SELF, "vkGetInstanceProcAddr");
+
     if(!vkGetInstanceProcAddr)
+    {
+        SDL_SetError("Failed loading %s: %s", "vkGetInstanceProcAddr",
+                     (const char *) dlerror());
         goto fail;
+    }
+
     _this->vulkan_config.vkGetInstanceProcAddr = (void *)vkGetInstanceProcAddr;
     _this->vulkan_config.vkEnumerateInstanceExtensionProperties =
         (void *)((PFN_vkGetInstanceProcAddr)_this->vulkan_config.vkGetInstanceProcAddr)(
             VK_NULL_HANDLE, "vkEnumerateInstanceExtensionProperties");
     if(!_this->vulkan_config.vkEnumerateInstanceExtensionProperties)
+    {
+        SDL_SetError("No vkEnumerateInstanceExtensionProperties found.");
         goto fail;
+    }
     extensions = SDL_Vulkan_CreateInstanceExtensionsList(
         (PFN_vkEnumerateInstanceExtensionProperties)
             _this->vulkan_config.vkEnumerateInstanceExtensionProperties,
@@ -91,10 +99,12 @@ int UIKit_Vulkan_LoadLibrary(_THIS, const char *path)
                      VK_MVK_IOS_SURFACE_EXTENSION_NAME "extension");
         goto fail;
     }
+    if (UIKit_Mtl_LoadLibrary(NULL) < 0)
+        goto fail;
+
     return 0;
 
 fail:
-    SDL_UnloadObject(_this->vulkan_config.loader_handle);
     _this->vulkan_config.loader_handle = NULL;
     return -1;
 }
@@ -103,8 +113,8 @@ void UIKit_Vulkan_UnloadLibrary(_THIS)
 {
     if(_this->vulkan_config.loader_handle)
     {
-        SDL_UnloadObject(_this->vulkan_config.loader_handle);
         _this->vulkan_config.loader_handle = NULL;
+        UIKit_Mtl_UnloadLibrary();
     }
 }
 
@@ -155,7 +165,7 @@ SDL_bool UIKit_Vulkan_CreateSurface(_THIS,
     createInfo.sType = VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
     createInfo.pNext = NULL;
     createInfo.flags = 0;
-    createInfo.pView = UIKit_Mtl_AddMetalView(window);
+    createInfo.pView = (__bridge void *)UIKit_Mtl_AddMetalView(window);
     result = vkCreateIOSSurfaceMVK(instance, &createInfo,
                                        NULL, surface);
     if(result != VK_SUCCESS)
