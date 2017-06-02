@@ -20,6 +20,8 @@
 */
 #include "../../SDL_internal.h"
 
+#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_COCOA
+
 #include "SDL_uikitvideo.h"
 #include "SDL_uikitwindow.h"
 #include "SDL_assert.h"
@@ -27,8 +29,6 @@
 #include "SDL_loadso.h"
 #include "SDL_uikitvulkan.h"
 #include "SDL_syswm.h"
-
-#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_COCOA
 
 SDL_metalview* UIKit_Mtl_AddMetalView(SDL_Window* window);
 void UIKit_Mtl_GetDrawableSize(SDL_Window*, int* w, int* h);

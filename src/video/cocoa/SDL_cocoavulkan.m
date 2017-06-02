@@ -20,6 +20,8 @@
 */
 #include "../../SDL_internal.h"
 
+#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_COCOA
+
 #include "SDL_cocoavideo.h"
 #include "SDL_cocoawindow.h"
 #include "SDL_assert.h"
@@ -27,8 +29,6 @@
 #include "SDL_loadso.h"
 #include "SDL_cocoavulkan.h"
 #include "SDL_syswm.h"
-
-#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_COCOA
 
 typedef struct _SDL_metalview SDL_metalview;
 SDL_metalview* Cocoa_Mtl_AddMetalView(SDL_Window* window);
@@ -83,13 +83,13 @@ int Cocoa_Vulkan_LoadLibrary(_THIS, const char *path)
     if(!hasSurfaceExtension)
     {
         SDL_SetError("Installed MoltenVK/Vulkan doesn't implement the "
-        		     VK_KHR_SURFACE_EXTENSION_NAME " extension");
+                     VK_KHR_SURFACE_EXTENSION_NAME " extension");
         goto fail;
     }
     else if(!hasMacOSSurfaceExtension)
     {
         SDL_SetError("Installed MoltenVK/Vulkan doesn't implement the "
-        		     VK_MVK_MACOS_SURFACE_EXTENSION_NAME "extension");
+                     VK_MVK_MACOS_SURFACE_EXTENSION_NAME "extension");
         goto fail;
     }
     return 0;
@@ -124,7 +124,7 @@ SDL_bool Cocoa_Vulkan_GetInstanceExtensions(_THIS,
     }
     return SDL_Vulkan_GetInstanceExtensions_Helper(
             count, names, SDL_arraysize(extensionsForCocoa),
-			extensionsForCocoa);
+            extensionsForCocoa);
 }
 
 SDL_bool Cocoa_Vulkan_CreateSurface(_THIS,
@@ -133,39 +133,39 @@ SDL_bool Cocoa_Vulkan_CreateSurface(_THIS,
                                   VkSurfaceKHR *surface)
 {
     PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
-    	(PFN_vkGetInstanceProcAddr)_this->vulkan_config.vkGetInstanceProcAddr;
-	PFN_vkCreateMacOSSurfaceMVK vkCreateMacOSSurfaceMVK =
-		(PFN_vkCreateMacOSSurfaceMVK)vkGetInstanceProcAddr(
-											(VkInstance)instance,
-											"vkCreateMacOSSurfaceMVK");
-	VkMacOSSurfaceCreateInfoMVK createInfo = {};
-	VkResult result;
+        (PFN_vkGetInstanceProcAddr)_this->vulkan_config.vkGetInstanceProcAddr;
+    PFN_vkCreateMacOSSurfaceMVK vkCreateMacOSSurfaceMVK =
+        (PFN_vkCreateMacOSSurfaceMVK)vkGetInstanceProcAddr(
+                                            (VkInstance)instance,
+                                            "vkCreateMacOSSurfaceMVK");
+    VkMacOSSurfaceCreateInfoMVK createInfo = {};
+    VkResult result;
 
-	if(!_this->vulkan_config.loader_handle)
+    if(!_this->vulkan_config.loader_handle)
     {
         SDL_SetError("Vulkan is not loaded");
         return SDL_FALSE;
     }
 
-	if(!vkCreateMacOSSurfaceMVK)
-	{
-		SDL_SetError(VK_MVK_MACOS_SURFACE_EXTENSION_NAME
-				     " extension is not enabled in the Vulkan instance.");
-		return SDL_FALSE;
-	}
-	createInfo.sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
-	createInfo.pNext = NULL;
-	createInfo.flags = 0;
-	createInfo.pView = Cocoa_Mtl_AddMetalView(window);
-	result = vkCreateMacOSSurfaceMVK(instance, &createInfo,
-									   NULL, surface);
-	if(result != VK_SUCCESS)
-	{
-		SDL_SetError("vkCreateMacOSSurfaceMVK failed: %s",
-				     SDL_Vulkan_GetResultString(result));
-		return SDL_FALSE;
-	}
-	return SDL_TRUE;
+    if(!vkCreateMacOSSurfaceMVK)
+    {
+        SDL_SetError(VK_MVK_MACOS_SURFACE_EXTENSION_NAME
+                     " extension is not enabled in the Vulkan instance.");
+        return SDL_FALSE;
+    }
+    createInfo.sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
+    createInfo.pNext = NULL;
+    createInfo.flags = 0;
+    createInfo.pView = Cocoa_Mtl_AddMetalView(window);
+    result = vkCreateMacOSSurfaceMVK(instance, &createInfo,
+                                       NULL, surface);
+    if(result != VK_SUCCESS)
+    {
+        SDL_SetError("vkCreateMacOSSurfaceMVK failed: %s",
+                     SDL_Vulkan_GetResultString(result));
+        return SDL_FALSE;
+    }
+    return SDL_TRUE;
 }
 
 void Cocoa_Vulkan_GetDrawableSize(_THIS, SDL_Window *window, int *w, int *h)
@@ -175,3 +175,4 @@ void Cocoa_Vulkan_GetDrawableSize(_THIS, SDL_Window *window, int *w, int *h)
 
 #endif
 
+/* vim: set ts=4 sw=4 expandtab: */

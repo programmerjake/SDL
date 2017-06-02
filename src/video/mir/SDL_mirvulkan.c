@@ -76,13 +76,13 @@ int MIR_Vulkan_LoadLibrary(_THIS, const char *path)
     if(!hasSurfaceExtension)
     {
         SDL_SetError("Installed Vulkan doesn't implement the "
-        		     VK_KHR_SURFACE_EXTENSION_NAME " extension");
+                     VK_KHR_SURFACE_EXTENSION_NAME " extension");
         goto fail;
     }
     else if(!hasMIRSurfaceExtension)
     {
         SDL_SetError("Installed Vulkan doesn't implement the "
-        		     VK_KHR_MIR_SURFACE_EXTENSION_NAME "extension");
+                     VK_KHR_MIR_SURFACE_EXTENSION_NAME "extension");
         goto fail;
     }
     return 0;
@@ -117,7 +117,7 @@ SDL_bool MIR_Vulkan_GetInstanceExtensions(_THIS,
     }
     return SDL_Vulkan_GetInstanceExtensions_Helper(
             count, names, SDL_arraysize(extensionsForMir),
-			extensionsForMir);
+            extensionsForMir);
 }
 
 SDL_bool MIR_Vulkan_CreateSurface(_THIS,
@@ -127,41 +127,42 @@ SDL_bool MIR_Vulkan_CreateSurface(_THIS,
 {
     SDL_WindowData *windowData = (SDL_WindowData *)window->driverdata;
     PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
-    	(PFN_vkGetInstanceProcAddr)_this->vulkan_config.vkGetInstanceProcAddr;
-	PFN_vkCreateMirSurfaceKHR vkCreateMirSurfaceKHR =
-		(PFN_vkCreateMirSurfaceKHR)vkGetInstanceProcAddr(
-											(VkInstance)instance,
-											"vkCreateMirSurfaceKHR");
-	VkMirSurfaceCreateInfoKHR createInfo = {};
-	VkResult result;
+        (PFN_vkGetInstanceProcAddr)_this->vulkan_config.vkGetInstanceProcAddr;
+    PFN_vkCreateMirSurfaceKHR vkCreateMirSurfaceKHR =
+        (PFN_vkCreateMirSurfaceKHR)vkGetInstanceProcAddr(
+                                            (VkInstance)instance,
+                                            "vkCreateMirSurfaceKHR");
+    VkMirSurfaceCreateInfoKHR createInfo = {};
+    VkResult result;
 
-	if(!_this->vulkan_config.loader_handle)
+    if(!_this->vulkan_config.loader_handle)
     {
         SDL_SetError("Vulkan is not loaded");
         return SDL_FALSE;
     }
 
-	if(!vkCreateMirSurfaceKHR)
-	{
-		SDL_SetError(VK_KHR_MIR_SURFACE_EXTENSION_NAME
-				     " extension is not enabled in the Vulkan instance.");
-		return SDL_FALSE;
-	}
-	createInfo.sType = VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR;
-	createInfo.pNext = NULL;
-	createInfo.flags = 0;
-	createInfo.connection = windowData->mir_data->connection;
-	createInfo.mirSurface = windowData->window;
-	result = vkCreateMirSurfaceKHR(instance, &createInfo,
-									   NULL, surface);
-	if(result != VK_SUCCESS)
-	{
-		SDL_SetError("vkCreateMirSurfaceKHR failed: %s",
-				     SDL_Vulkan_GetResultString(result));
-		return SDL_FALSE;
-	}
-	return SDL_TRUE;
+    if(!vkCreateMirSurfaceKHR)
+    {
+        SDL_SetError(VK_KHR_MIR_SURFACE_EXTENSION_NAME
+                     " extension is not enabled in the Vulkan instance.");
+        return SDL_FALSE;
+    }
+    createInfo.sType = VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR;
+    createInfo.pNext = NULL;
+    createInfo.flags = 0;
+    createInfo.connection = windowData->mir_data->connection;
+    createInfo.mirSurface = windowData->window;
+    result = vkCreateMirSurfaceKHR(instance, &createInfo,
+                                       NULL, surface);
+    if(result != VK_SUCCESS)
+    {
+        SDL_SetError("vkCreateMirSurfaceKHR failed: %s",
+                     SDL_Vulkan_GetResultString(result));
+        return SDL_FALSE;
+    }
+    return SDL_TRUE;
 }
 
 #endif
 
+/* vim: set ts=4 sw=4 expandtab: */

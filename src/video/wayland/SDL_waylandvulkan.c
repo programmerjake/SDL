@@ -76,13 +76,13 @@ int Wayland_Vulkan_LoadLibrary(_THIS, const char *path)
     if(!hasSurfaceExtension)
     {
         SDL_SetError("Installed Vulkan doesn't implement the "
-        		     VK_KHR_SURFACE_EXTENSION_NAME " extension");
+                     VK_KHR_SURFACE_EXTENSION_NAME " extension");
         goto fail;
     }
     else if(!hasWaylandSurfaceExtension)
     {
         SDL_SetError("Installed Vulkan doesn't implement the "
-        		     VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME "extension");
+                     VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME "extension");
         goto fail;
     }
     return 0;
@@ -117,7 +117,7 @@ SDL_bool Wayland_Vulkan_GetInstanceExtensions(_THIS,
     }
     return SDL_Vulkan_GetInstanceExtensions_Helper(
             count, names, SDL_arraysize(extensionsForWayland),
-			extensionsForWayland);
+            extensionsForWayland);
 }
 
 SDL_bool Wayland_Vulkan_CreateSurface(_THIS,
@@ -127,41 +127,42 @@ SDL_bool Wayland_Vulkan_CreateSurface(_THIS,
 {
     SDL_WindowData *windowData = (SDL_WindowData *)window->driverdata;
     PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
-    	(PFN_vkGetInstanceProcAddr)_this->vulkan_config.vkGetInstanceProcAddr;
-	PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR =
-		(PFN_vkCreateWaylandSurfaceKHR)vkGetInstanceProcAddr(
-											(VkInstance)instance,
-											"vkCreateWaylandSurfaceKHR");
-	VkWaylandSurfaceCreateInfoKHR createInfo = {};
-	VkResult result;
+        (PFN_vkGetInstanceProcAddr)_this->vulkan_config.vkGetInstanceProcAddr;
+    PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR =
+        (PFN_vkCreateWaylandSurfaceKHR)vkGetInstanceProcAddr(
+                                            (VkInstance)instance,
+                                            "vkCreateWaylandSurfaceKHR");
+    VkWaylandSurfaceCreateInfoKHR createInfo = {};
+    VkResult result;
 
-	if(!_this->vulkan_config.loader_handle)
+    if(!_this->vulkan_config.loader_handle)
     {
         SDL_SetError("Vulkan is not loaded");
         return SDL_FALSE;
     }
 
-	if(!vkCreateWaylandSurfaceKHR)
-	{
-		SDL_SetError(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME
-				     " extension is not enabled in the Vulkan instance.");
-		return SDL_FALSE;
-	}
-	createInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
-	createInfo.pNext = NULL;
-	createInfo.flags = 0;
-	createInfo.display = windowData->waylandData->display;
-	createInfo.surface =  windowData->surface;
-	result = vkCreateWaylandSurfaceKHR(instance, &createInfo,
-									   NULL, surface);
-	if(result != VK_SUCCESS)
-	{
-		SDL_SetError("vkCreateWaylandSurfaceKHR failed: %s",
-				     SDL_Vulkan_GetResultString(result));
-		return SDL_FALSE;
-	}
-	return SDL_TRUE;
+    if(!vkCreateWaylandSurfaceKHR)
+    {
+        SDL_SetError(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME
+                     " extension is not enabled in the Vulkan instance.");
+        return SDL_FALSE;
+    }
+    createInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
+    createInfo.pNext = NULL;
+    createInfo.flags = 0;
+    createInfo.display = windowData->waylandData->display;
+    createInfo.surface =  windowData->surface;
+    result = vkCreateWaylandSurfaceKHR(instance, &createInfo,
+                                       NULL, surface);
+    if(result != VK_SUCCESS)
+    {
+        SDL_SetError("vkCreateWaylandSurfaceKHR failed: %s",
+                     SDL_Vulkan_GetResultString(result));
+        return SDL_FALSE;
+    }
+    return SDL_TRUE;
 }
 
 #endif
 
+/* vim: set ts=4 sw=4 expandtab: */
