@@ -20,33 +20,28 @@
  */
 
 /*
- * Devices that do not support Metal are not handled currently.
- *
  * Thanks to Alex Szpakowski, @slime73 on GitHub, for his gist showing
  * how to add a CAMetalLayer backed view.
  */
 
-#import "SDL_sysvideo.h"
+#include "../../SDL_internal.h"
+
+#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_UIKIT
+
+#import "../SDL_sysvideo.h"
 #import "SDL_uikitwindow.h"
+#import "SDL_uikitmetalview.h"
 
-#if !TARGET_OS_SIMULATOR
-#import <UIKit/UIKit.h>
-#import <Metal/Metal.h>
-#import <QuartzCore/CAMetalLayer.h>
+#include "SDL_assert.h"
+#include "SDL_loadso.h"
+#include <dlfcn.h>
 
-#define METALVIEW_TAG 255
+typedef id <MTLDevice> __nullable (*PFN_MTLCreateSystemDefaultDevice)(void);
+static PFN_MTLCreateSystemDefaultDevice MtlCreateSystemDefaultDevice;
 
-@interface SDL_metalview : UIView
+static void* loader_handle;
 
-- (instancetype)initWithFrame:(CGRect)frame
-                        scale:(CGFloat)scale
-                        tag:(int)tag;
-
-@property (retain, nonatomic) CAMetalLayer *metalLayer;
-
-@end
-
-@implementation SDL_metalview
+@implementation SDL_uikitmetalview
 
 + (Class)layerClass
 {
@@ -63,7 +58,7 @@
 
         _metalLayer = (CAMetalLayer *) self.layer;
         _metalLayer.opaque = YES;
-        _metalLayer.device = MTLCreateSystemDefaultDevice();
+        _metalLayer.device = MtlCreateSystemDefaultDevice();
 
         /* Set the appropriate scale (for retina display support) */
         self.contentScaleFactor = scale;
@@ -92,17 +87,41 @@
 }
 
 @end
-#else
-typedef struct _SDL_metalview SDL_metalview;
-#endif
 
-SDL_metalview*
+int UIKit_Mtl_LoadLibrary(const char *path)
+{
+    if (MtlCreateSystemDefaultDevice) {
+        SDL_SetError("Metal already loaded.");
+        return -1;
+    }
+    loader_handle = SDL_LoadObject("Metal.framework/Metal");
+    if (!loader_handle)
+        return -1;        
+    MtlCreateSystemDefaultDevice = SDL_LoadFunction(loader_handle,
+                                                "MTLCreateSystemDefaultDevice");
+    if (!MtlCreateSystemDefaultDevice) {
+        UIKit_Mtl_UnloadLibrary();
+        return -1;
+    }
+    return 0;
+}
+
+void UIKit_Mtl_UnloadLibrary()
+{
+    if (loader_handle) {
+        SDL_UnloadObject(loader_handle);
+        loader_handle = NULL;
+    }
+}
+
+SDL_uikitmetalview*
 UIKit_Mtl_AddMetalView(SDL_Window* window)
 {
-#if !TARGET_IPHONE_SIMULATOR
     SDL_WindowData *data = (__bridge SDL_WindowData *)window->driverdata;
     SDL_uikitview *view = (SDL_uikitview*)data.uiwindow.rootViewController.view;
     CGFloat scale = 1.0;
+    
+    SDL_assert(loader_handle != 0 && MtlCreateSystemDefaultDevice != 0);
     
     if (window->flags & SDL_WINDOW_ALLOW_HIGHDPI) {
         /* Set the scale to the natural scale factor of the screen - the
@@ -118,8 +137,8 @@ UIKit_Mtl_AddMetalView(SDL_Window* window)
             scale = data.uiwindow.screen.scale;
         }
     }
-    SDL_metalview *metalview
-         = [[SDL_metalview alloc] initWithFrame:view.frame
+    SDL_uikitmetalview *metalview
+         = [[SDL_uikitmetalview alloc] initWithFrame:view.frame
                                           scale:scale
                                             tag:METALVIEW_TAG];
 #if 1
@@ -137,9 +156,6 @@ UIKit_Mtl_AddMetalView(SDL_Window* window)
 #endif
 
     return metalview;
-#else
-    return NULL;
-#endif
 }
 
 void
@@ -147,8 +163,7 @@ UIKit_Mtl_GetDrawableSize(SDL_Window * window, int * w, int * h)
 {
     SDL_WindowData *data = (__bridge SDL_WindowData *)window->driverdata;
     SDL_uikitview *view = (SDL_uikitview*)data.uiwindow.rootViewController.view;
-#if !TARGET_IPHONE_SIMULATOR
-    SDL_metalview* metalview = [view viewWithTag:METALVIEW_TAG];
+    SDL_uikitmetalview* metalview = [view viewWithTag:METALVIEW_TAG];
     if (metalview) {
         CAMetalLayer *layer = (CAMetalLayer*)metalview.layer;
         assert(layer != NULL);
@@ -159,6 +174,7 @@ UIKit_Mtl_GetDrawableSize(SDL_Window * window, int * w, int * h)
         if (h)
             *h = layer.drawableSize.height;
     } else
-#endif
         SDL_GetWindowSize(window, w, h);
 }
+
+#endif
