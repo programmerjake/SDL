@@ -97,8 +97,8 @@ int UIKit_Mtl_LoadLibrary(const char *path)
     loader_handle = SDL_LoadObject("Metal.framework/Metal");
     if (!loader_handle)
         return -1;        
-    MtlCreateSystemDefaultDevice = SDL_LoadFunction(loader_handle,
-                                                "MTLCreateSystemDefaultDevice");
+    MtlCreateSystemDefaultDevice =
+            SDL_LoadFunction(loader_handle, "MTLCreateSystemDefaultDevice");
     if (!MtlCreateSystemDefaultDevice) {
         UIKit_Mtl_UnloadLibrary();
         return -1;
