@@ -233,7 +233,7 @@ static void createInstance(void)
 {
     VkApplicationInfo appInfo = {0};
     VkInstanceCreateInfo instanceCreateInfo = {0};
-    const char **extensions = NULL;
+    char **extensions = NULL;
     unsigned extensionCount = 0;
 	VkResult result;
 
@@ -1054,9 +1054,9 @@ static SDL_bool render(void)
         quit(2);
     }
     currentTime = (double)SDL_GetPerformanceCounter() / SDL_GetPerformanceFrequency();
-    clearColor.float32[0] = 0.5 + 0.5 * SDL_sin(currentTime);
-    clearColor.float32[1] = 0.5 + 0.5 * SDL_sin(currentTime + M_PI * 2 / 3);
-    clearColor.float32[2] = 0.5 + 0.5 * SDL_sin(currentTime + M_PI * 4 / 3);
+    clearColor.float32[0] = (float)(0.5 + 0.5 * SDL_sin(currentTime));
+    clearColor.float32[1] = (float)(0.5 + 0.5 * SDL_sin(currentTime + M_PI * 2 / 3));
+    clearColor.float32[2] = (float)(0.5 + 0.5 * SDL_sin(currentTime + M_PI * 4 / 3));
     clearColor.float32[3] = 1;
     rerecordCommandBuffer(frameIndex, &clearColor);
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1104,12 +1104,10 @@ static SDL_bool render(void)
 int main(int argc, char *argv[])
 {
     int fsaa, accel;
-    int value;
     int i, done;
     SDL_DisplayMode mode;
     SDL_Event event;
     Uint32 then, now, frames;
-    int status;
     int dw, dh;
 
     /* Enable standard application logging */
