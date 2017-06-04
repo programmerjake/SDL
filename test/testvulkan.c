@@ -257,7 +257,7 @@ static void createInstance(void)
     }
     if(!SDL_Vulkan_GetInstanceExtensions(state->windows[0], &extensionCount, extensions))
     {
-        SDL_free(extensions);
+        SDL_free((void*)extensions);
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "SDL_Vulkan_GetInstanceExtensions(): %s\n",
                      SDL_GetError());
@@ -266,7 +266,7 @@ static void createInstance(void)
     instanceCreateInfo.enabledExtensionCount = extensionCount;
     instanceCreateInfo.ppEnabledExtensionNames = extensions;
     result = vkCreateInstance(&instanceCreateInfo, NULL, &vulkanContext.instance);
-    SDL_free(extensions);
+    SDL_free((void*)extensions);
     if(result != VK_SUCCESS)
     {
         vulkanContext.instance = VK_NULL_HANDLE;
