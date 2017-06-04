@@ -152,13 +152,15 @@ SDL_bool SDL_Vulkan_GetInstanceExtensions_Helper(unsigned *userCount,
 {
     if(userNames)
     {
+		unsigned int i;
+
         if(*userCount != nameCount)
         {
             SDL_SetError(
                 "count doesn't match count from previous call of SDL_Vulkan_GetInstanceExtensions");
             return SDL_FALSE;
         }
-        for(unsigned i = 0; i < nameCount; i++)
+        for(i = 0; i < nameCount; i++)
         {
             userNames[i] = names[i];
         }

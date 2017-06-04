@@ -18,6 +18,9 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
+/* @author Mark Callow, www.edgewise-consulting.com. Based on Jacob Lifshay's SDL_x11vulkan.c. */
+
 #include "../../SDL_internal.h"
 
 #if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_WINDOWS
@@ -34,6 +37,7 @@ int WIN_Vulkan_LoadLibrary(_THIS, const char *path)
 {
     VkExtensionProperties *extensions = NULL;
     Uint32 extensionCount = 0;
+	Uint32 i;
     SDL_bool hasSurfaceExtension = SDL_FALSE;
     SDL_bool hasWin32SurfaceExtension = SDL_FALSE;
     PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = NULL;
@@ -44,7 +48,7 @@ int WIN_Vulkan_LoadLibrary(_THIS, const char *path)
     if(!path)
         path = SDL_getenv("SDL_VULKAN_LIBRARY");
     if(!path)
-        path = "libvulkan.dll";
+        path = "vulkan-1.dll";
     _this->vulkan_config.loader_handle = SDL_LoadObject(path);
     if(!_this->vulkan_config.loader_handle)
         return -1;
@@ -65,12 +69,12 @@ int WIN_Vulkan_LoadLibrary(_THIS, const char *path)
         &extensionCount);
     if(!extensions)
         goto fail;
-    for(Uint32 i = 0; i < extensionCount; i++)
+    for(i = 0; i < extensionCount; i++)
     {
         if(SDL_strcmp(VK_KHR_SURFACE_EXTENSION_NAME, extensions[i].extensionName) == 0)
             hasSurfaceExtension = SDL_TRUE;
-        else if(SDL_strcmp(VK_KHR_WIN_SURFACE_EXTENSION_NAME, extensions[i].extensionName) == 0)
-            hasWINSurfaceExtension = SDL_TRUE;
+        else if(SDL_strcmp(VK_KHR_WIN32_SURFACE_EXTENSION_NAME, extensions[i].extensionName) == 0)
+            hasWin32SurfaceExtension = SDL_TRUE;
     }
     SDL_free(extensions);
     if(!hasSurfaceExtension)
@@ -82,7 +86,7 @@ int WIN_Vulkan_LoadLibrary(_THIS, const char *path)
     else if(!hasWin32SurfaceExtension)
     {
         SDL_SetError("Installed Vulkan doesn't implement the "
-                     VK_KHR_WIN_SURFACE_EXTENSION_NAME "extension");
+                     VK_KHR_WIN32_SURFACE_EXTENSION_NAME "extension");
         goto fail;
     }
     return 0;
@@ -108,7 +112,7 @@ SDL_bool WIN_Vulkan_GetInstanceExtensions(_THIS,
                                           const char **names)
 {
     static const char *const extensionsForWin32[] = {
-        VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN_SURFACE_EXTENSION_NAME
+        VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME
     };
     if(!_this->vulkan_config.loader_handle)
     {
@@ -132,7 +136,7 @@ SDL_bool WIN_Vulkan_CreateSurface(_THIS,
         (PFN_vkCreateWin32SurfaceKHR)vkGetInstanceProcAddr(
                                             (VkInstance)instance,
                                             "vkCreateWin32SurfaceKHR");
-    VkWin32SurfaceCreateInfoKHR createInfo = {};
+    VkWin32SurfaceCreateInfoKHR createInfo;
     VkResult result;
 
     if(!_this->vulkan_config.loader_handle)
