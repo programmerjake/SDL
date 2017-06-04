@@ -233,7 +233,7 @@ static void createInstance(void)
 {
     VkApplicationInfo appInfo = {0};
     VkInstanceCreateInfo instanceCreateInfo = {0};
-    char **extensions = NULL;
+    const char **extensions = NULL;
     unsigned extensionCount = 0;
 	VkResult result;
 
