@@ -33,6 +33,11 @@
 
 #include <dlfcn.h>
 
+#define DEFAULT_MOLTENVK  "libMoltenVK.dylib"
+/* Since libSDL is static, could use RTLD_SELF. Using RTLD_DEFAULT is future
+ * proofing. */
+#define DEFAULT_HANDLE RTLD_DEFAULT
+
 int UIKit_Vulkan_LoadLibrary(_THIS, const char *path)
 {
     VkExtensionProperties *extensions = NULL;
@@ -44,22 +49,43 @@ int UIKit_Vulkan_LoadLibrary(_THIS, const char *path)
     if(_this->vulkan_config.loader_handle)
         return SDL_SetError("MoltenVK/Vulkan already loaded");
 
-    /* There is no shared MoltenVK/Vulkan dylib on iOS. It is statically
-     * linked to the app.
-     */
-    if (path != NULL)
+    /* Load the Vulkan loader library */
+    if(!path)
+        path = SDL_getenv("SDL_VULKAN_LIBRARY");
+    if(!path)
     {
-        return SDL_SetError("iOS Vulkan Load Library just here for compatibility");
+        /* MoltenVK framework, currently, v0.17.0, has a static library and is
+         * the recommended way to use the package. There is likely no object to
+         * load. */
+        vkGetInstanceProcAddr =
+        (PFN_vkGetInstanceProcAddr)dlsym(DEFAULT_HANDLE,
+                                         "vkGetInstanceProcAddr");
     }
-
-    _this->vulkan_config.loader_handle = RTLD_SELF;
-
-    vkGetInstanceProcAddr =
-        (PFN_vkGetInstanceProcAddr)dlsym(RTLD_SELF, "vkGetInstanceProcAddr");
-
+    
+    if(vkGetInstanceProcAddr)
+    {
+        _this->vulkan_config.loader_handle = DEFAULT_HANDLE;
+    }
+    else
+    {
+        if (!path)
+        {
+            /* Look for the .dylib packaged with the application instead. */
+            path = DEFAULT_MOLTENVK;
+        }
+        
+        _this->vulkan_config.loader_handle = SDL_LoadObject(path);
+        if(!_this->vulkan_config.loader_handle)
+            return -1;
+        SDL_strlcpy(_this->vulkan_config.loader_path, path, SDL_arraysize(_this->vulkan_config.loader_path));
+        vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)SDL_LoadFunction(
+                                                                            _this->vulkan_config.loader_handle, "vkGetInstanceProcAddr");
+    }
     if(!vkGetInstanceProcAddr)
     {
-        SDL_SetError("Failed loading %s: %s", "vkGetInstanceProcAddr",
+        SDL_SetError("Failed to find %s in either executable or %s: %s",
+                     "vkGetInstanceProcAddr",
+                     DEFAULT_MOLTENVK,
                      (const char *) dlerror());
         goto fail;
     }
@@ -113,6 +139,8 @@ void UIKit_Vulkan_UnloadLibrary(_THIS)
 {
     if(_this->vulkan_config.loader_handle)
     {
+        if (_this->vulkan_config.loader_handle != DEFAULT_HANDLE)
+            SDL_UnloadObject(_this->vulkan_config.loader_handle);
         _this->vulkan_config.loader_handle = NULL;
         UIKit_Mtl_UnloadLibrary();
     }
