@@ -77,6 +77,14 @@ typedef VkSurfaceKHR SDL_vulkanSurface; /* for compatibility with Tizen */
  *        \a path points to the same library which will be loaded by the
  *        Vulkan ICD.
  *
+ *  \note On Apple devices, if \a path is NULL, SDL will attempt to find
+ *        the vkGetInstanceProcAddr address within all the mach-o images of
+ *        the current process (macOS) or within the current image (iOS).
+ *        This is because the recommended MoltenVK usage is static libraries.
+ *        If it is not found then SDL will attempt to load libMoltenVK.dylib.
+ *        Applications using the dylib alternative therefore do not need to do
+ *        anything special when calling SDL.
+ *
  *  \sa SDL_Vulkan_GetVkGetInstanceProcAddr()
  *  \sa SDL_Vulkan_UnloadLibrary()
  */
@@ -84,6 +92,9 @@ extern DECLSPEC int SDLCALL SDL_Vulkan_LoadLibrary(const char *path);
 
 /**
  *  \brief Get the address of the \c vkGetInstanceProcAddr function.
+ *
+ *  \note This should be called after either calling SDL_Vulkan_LoadLibrary
+ *        or creating an SDL_Window with the SDL_WINDOW_VULKAN flag.
  */
 extern DECLSPEC void *SDLCALL SDL_Vulkan_GetVkGetInstanceProcAddr(void);
 

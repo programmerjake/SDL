@@ -19,31 +19,17 @@
  3. This notice may not be removed or altered from any source distribution.
  */
 
-#import <Cocoa/Cocoa.h>
-#import <Metal/Metal.h>
-#import <QuartzCore/CAMetalLayer.h>
+#import "SDL_cocoametalview.h"
 
-#import "../SDL_sysvideo.h"
-#import "SDL_cocoawindow.h"
+#include "SDL_assert.h"
+#include "SDL_loadso.h"
+#include <dlfcn.h>
 
-#define METALVIEW_TAG 255
+typedef id <MTLDevice> __nullable (*PFN_MTLCreateSystemDefaultDevice)(void);
+static PFN_MTLCreateSystemDefaultDevice MtlCreateSystemDefaultDevice;
 
-@interface SDL_metalview : NSView {
-    CAMetalLayer* _metalLayer;
-    NSInteger _tag;
-    bool _useHighDPI;
-}
-
-- (instancetype)initWithFrame:(NSRect)frame
-                   useHighDPI:(bool)useHighDPI;
-
-@property (retain, nonatomic) CAMetalLayer *metalLayer;
-/* Override superclass tag so this class can set it. */
-@property (assign, readonly) NSInteger tag;
-
-@end
-
-@implementation SDL_metalview
+static void* loader_handle;
+@implementation SDL_cocoametalview
 
 @synthesize metalLayer = _metalLayer;
 /* The synthesized getter should be called by super's viewWithTag. */
@@ -68,7 +54,7 @@
     _metalLayer = [CAMetalLayer layer];
     _metalLayer.framebufferOnly = YES;
     _metalLayer.opaque = YES;
-    _metalLayer.device = MTLCreateSystemDefaultDevice();
+    _metalLayer.device = MtlCreateSystemDefaultDevice();
     _useHighDPI = useHighDPI;
     if (_useHighDPI) {
         /* Isn't there a better way to convert from NSSize to CGSize? */
@@ -101,13 +87,42 @@
 
 @end
 
-SDL_metalview*
+int Cocoa_Mtl_LoadLibrary(const char *path)
+{
+    if (MtlCreateSystemDefaultDevice) {
+        SDL_SetError("Metal already loaded.");
+        return -1;
+    }
+    loader_handle = SDL_LoadObject("Metal.framework/Metal");
+    if (!loader_handle)
+        return -1;
+    MtlCreateSystemDefaultDevice =
+            SDL_LoadFunction(loader_handle, "MTLCreateSystemDefaultDevice");
+    if (!MtlCreateSystemDefaultDevice) {
+        Cocoa_Mtl_UnloadLibrary();
+        return -1;
+    }
+    return 0;
+}
+
+void Cocoa_Mtl_UnloadLibrary()
+{
+    if (loader_handle) {
+        SDL_UnloadObject(loader_handle);
+        loader_handle = NULL;
+    }
+}
+
+SDL_cocoametalview*
 Cocoa_Mtl_AddMetalView(SDL_Window* window)
 {
     SDL_WindowData *data = (SDL_WindowData *)window->driverdata;
     NSView *view = data->nswindow.contentView;
-    SDL_metalview *metalview
-        = [[SDL_metalview alloc] initWithFrame:view.frame
+
+    SDL_assert(loader_handle != 0 && MtlCreateSystemDefaultDevice != 0);    
+
+    SDL_cocoametalview *metalview
+        = [[SDL_cocoametalview alloc] initWithFrame:view.frame
                        useHighDPI:(window->flags & SDL_WINDOW_ALLOW_HIGHDPI)];
     [view addSubview:metalview];
   
@@ -119,7 +134,7 @@ Cocoa_Mtl_GetDrawableSize(SDL_Window * window, int * w, int * h)
 {
     SDL_WindowData *data = (__bridge SDL_WindowData *)window->driverdata;
     NSView *view = data->nswindow.contentView;
-    SDL_metalview* metalview = [view viewWithTag:METALVIEW_TAG];
+    SDL_cocoametalview* metalview = [view viewWithTag:METALVIEW_TAG];
     if (metalview) {
 #if 1
         CAMetalLayer *layer = (CAMetalLayer*)metalview.layer;
