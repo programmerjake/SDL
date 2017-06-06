@@ -1,6 +1,6 @@
 /*
  Simple DirectMedia Layer
- Copyright (C) 2017, Mark Callow.
+ Copyright (C) 1997-2017 Sam Lantinga <slouken@libsdl.org>
  
  This software is provided 'as-is', without any express or implied
  warranty.  In no event will the authors be held liable for any damages
@@ -17,6 +17,13 @@
  2. Altered source versions must be plainly marked as such, and must not be
  misrepresented as being the original software.
  3. This notice may not be removed or altered from any source distribution.
+ */
+
+/*
+ * @author Mark Callow, www.edgewise-consulting.com.
+ *
+ * Thanks to Alex Szpakowski, @slime73 on GitHub, for his gist showing
+ * how to add a CAMetalLayer backed view.
  */
 
 #import "SDL_cocoametalview.h"

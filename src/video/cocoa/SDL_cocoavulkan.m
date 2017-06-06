@@ -18,6 +18,12 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
+/* 
+ * @author Mark Callow, www.edgewise-consulting.com. Based on Jacob Lifshay's
+ * SDL_x11vulkan.c.
+ */
+
 #include "../../SDL_internal.h"
 
 #if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_COCOA
@@ -78,7 +84,8 @@ int Cocoa_Vulkan_LoadLibrary(_THIS, const char *path)
         _this->vulkan_config.loader_handle = SDL_LoadObject(path);
         if(!_this->vulkan_config.loader_handle)
             return -1;
-        SDL_strlcpy(_this->vulkan_config.loader_path, path, SDL_arraysize(_this->vulkan_config.loader_path));
+        SDL_strlcpy(_this->vulkan_config.loader_path, path,
+                    SDL_arraysize(_this->vulkan_config.loader_path));
         vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)SDL_LoadFunction(
             _this->vulkan_config.loader_handle, "vkGetInstanceProcAddr");
     }

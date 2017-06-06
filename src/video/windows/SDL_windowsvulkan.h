@@ -19,7 +19,10 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 
-/* @author Mark Callow, www.edgewise-consulting.com. Based on Jacob Lifshay's SDL_x11vulkan.h. */
+/*
+ * @author Mark Callow, www.edgewise-consulting.com. Based on Jacob Lifshay's
+ * SDL_x11vulkan.h.
+ */
 
 #include "../../SDL_internal.h"
 
