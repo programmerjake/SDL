@@ -32,7 +32,7 @@
 enum
 {
     VK_ERROR_FRAGMENTED_POOL = -12,
-}
+};
 #endif
 #if VK_HEADER_VERSION < 38
 enum {
