@@ -25,11 +25,6 @@
 
 #include "SDL_stdinc.h"
 
-// Android does not support Vulkan in native code using the "armeabi" ABI.
-#if defined(__ANDROID__) && defined(__ARM_EABI__) && !defined(__ARM_ARCH_7A__)
-#undef SDL_VIDEO_VULKAN_SURFACE
-#define SDL_VIDEO_VULKAN_SURFACE 0
-#endif
 #if defined(SDL_LOADSO_DISABLED)
 #undef SDL_VIDEO_VULKAN_SURFACE
 #define SDL_VIDEO_VULKAN_SURFACE 0
