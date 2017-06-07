@@ -146,7 +146,6 @@
 #define SDL_VIDEO_VULKAN_SURFACE 0
 #endif
 
-
 /* Enable system power support */
 #define SDL_POWER_UIKIT 1
 
