@@ -25,10 +25,17 @@
 
 #if SDL_VIDEO_VULKAN_SURFACE
 
+/* Based on the headers found in
+ * https://github.com/KhronosGroup/Vulkan-LoaderAndValidationLayers
+ */
 #if VK_HEADER_VERSION < 22
 enum
 {
     VK_ERROR_FRAGMENTED_POOL = -12,
+}
+#endif
+#if VK_HEADER_VERSION < 38
+enum {
     VK_ERROR_OUT_OF_POOL_MEMORY_KHR = -1000069000
 };
 #endif
