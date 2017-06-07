@@ -1175,7 +1175,8 @@ int main(int argc, char *argv[])
             SDLTest_CommonEvent(state, &event, &done);
         }
 
-        render();
+        if(!done)
+            render();
     }
 
     /* Print out some timing information */
