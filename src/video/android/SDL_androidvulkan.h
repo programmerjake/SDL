@@ -18,31 +18,35 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
+/*
+ * @author Mark Callow, www.edgewise-consulting.com. Based on Jacob Lifshay's
+ * SDL_x11vulkan.h.
+ */
+
 #include "../../SDL_internal.h"
 
-#ifndef _SDL_x11vulkan_h
-#define _SDL_x11vulkan_h
+#ifndef _SDL_androidvulkan_h
+#define _SDL_androidvulkan_h
 
 #include "../SDL_vulkan_internal.h"
+#include "../SDL_sysvideo.h"
 
-#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_X11
+#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_ANDROID
 
-typedef struct xcb_connection_t xcb_connection_t;
-typedef xcb_connection_t *(*PFN_XGetXCBConnection)(Display *dpy);
-
-int X11_Vulkan_LoadLibrary(_THIS, const char *path);
-void X11_Vulkan_UnloadLibrary(_THIS);
-SDL_bool X11_Vulkan_GetInstanceExtensions(_THIS,
+int Android_Vulkan_LoadLibrary(_THIS, const char *path);
+void Android_Vulkan_UnloadLibrary(_THIS);
+SDL_bool Android_Vulkan_GetInstanceExtensions(_THIS,
                                           SDL_Window *window,
                                           unsigned *count,
                                           const char **names);
-SDL_bool X11_Vulkan_CreateSurface(_THIS,
+SDL_bool Android_Vulkan_CreateSurface(_THIS,
                                   SDL_Window *window,
                                   VkInstance instance,
                                   VkSurfaceKHR *surface);
 
 #endif
 
-#endif /* _SDL_x11vulkan_h */
+#endif /* _SDL_androidvulkan_h */
 
 /* vi: set ts=4 sw=4 expandtab: */

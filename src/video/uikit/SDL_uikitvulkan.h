@@ -18,31 +18,37 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
+
+/*
+ * @author Mark Callow, www.edgewise-consulting.com. Based on Jacob Lifshay's
+ * SDL_x11vulkan.h.
+ */
+
 #include "../../SDL_internal.h"
 
-#ifndef _SDL_x11vulkan_h
-#define _SDL_x11vulkan_h
+#ifndef _SDL_uikitvulkan_h
+#define _SDL_uikitvulkan_h
 
 #include "../SDL_vulkan_internal.h"
+#include "../SDL_sysvideo.h"
 
-#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_X11
+#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_UIKIT
 
-typedef struct xcb_connection_t xcb_connection_t;
-typedef xcb_connection_t *(*PFN_XGetXCBConnection)(Display *dpy);
-
-int X11_Vulkan_LoadLibrary(_THIS, const char *path);
-void X11_Vulkan_UnloadLibrary(_THIS);
-SDL_bool X11_Vulkan_GetInstanceExtensions(_THIS,
+int UIKit_Vulkan_LoadLibrary(_THIS, const char *path);
+void UIKit_Vulkan_UnloadLibrary(_THIS);
+SDL_bool UIKit_Vulkan_GetInstanceExtensions(_THIS,
                                           SDL_Window *window,
                                           unsigned *count,
                                           const char **names);
-SDL_bool X11_Vulkan_CreateSurface(_THIS,
+SDL_bool UIKit_Vulkan_CreateSurface(_THIS,
                                   SDL_Window *window,
                                   VkInstance instance,
                                   VkSurfaceKHR *surface);
 
+void UIKit_Vulkan_GetDrawableSize(_THIS, SDL_Window *window, int *w, int *h);
+
 #endif
 
-#endif /* _SDL_x11vulkan_h */
+#endif /* _SDL_uikitvulkan_h */
 
 /* vi: set ts=4 sw=4 expandtab: */

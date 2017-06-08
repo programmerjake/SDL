@@ -312,6 +312,10 @@ set_option(VIDEO_COCOA         "Use Cocoa video driver" ${APPLE})
 set_option(DIRECTX             "Use DirectX for Windows audio/video" ${WINDOWS})
 set_option(RENDER_D3D          "Enable the Direct3D render driver" ${WINDOWS})
 set_option(VIDEO_VIVANTE       "Use Vivante EGL video driver" ${UNIX_SYS})
+dep_option(VIDEO_VULKAN        "Enable Vulkan surface creation" ON "ANDROID OR APPLE OR LINUX OR WINDOWS" OFF)
+if(VIDEO_VULKAN)
+  set(VULKAN_SDK $ENV{VULKAN_SDK} CACHE PATH "Location of Vulkan library & headers")
+endif()
 
 # TODO: We should (should we?) respect cmake's ${BUILD_SHARED_LIBS} flag here
 # The options below are for compatibility to configure's default behaviour.
@@ -973,6 +977,11 @@ elseif(UNIX AND NOT APPLE AND NOT ANDROID)
 
     check_include_file("fcitx/frontend.h" HAVE_FCITX_FRONTEND_H)
 
+    if(VIDEO_VULKAN)
+      set(CMAKE_REQUIRED_INCLUDES "${VULKAN_SDK}/include")
+      check_include_file("vulkan/vulkan.h" HAVE_VULKAN_H)
+    endif()
+
   endif()
 
   if(INPUT_TSLIB)
@@ -1220,6 +1229,11 @@ elseif(WINDOWS)
       set(SDL_VIDEO_RENDER_OGL_ES2 1)
       set(HAVE_VIDEO_OPENGLES TRUE)
     endif()
+
+    if(VIDEO_VULKAN)
+      set(CMAKE_REQUIRED_INCLUDES "${VULKAN_SDK}/include")
+      check_include_file("vulkan/vulkan.h" HAVE_VULKAN_H)
+    endif()
   endif()
 
   if(SDL_JOYSTICK)
@@ -1351,6 +1365,12 @@ elseif(APPLE)
   endif()
 
   # Actually load the frameworks at the end so we don't duplicate include.
+  if (VIDEO_VULKAN)
+    set(CMAKE_REQUIRED_INCLUDES "${VULKAN_SDK}/include")
+    check_include_file("vulkan/vulkan.h" HAVE_VULKAN_H)
+    find_library(QUARTZCORE QuartzCore)
+    list(APPEND EXTRA_LIBS ${QUARTZCORE})
+  endif()
   if(SDL_FRAMEWORK_COREVIDEO)
     find_library(COREVIDEO CoreVideo)
     list(APPEND EXTRA_LIBS ${COREVIDEO})
@@ -1428,6 +1448,11 @@ elseif(HAIKU)
   endif()
 
   CheckPTHREAD()
+endif()
+
+if(VIDEO_VULKAN AND HAVE_VULKAN_H)
+  list(APPEND EXTRA_CFLAGS "-I${VULKAN_SDK}/include")
+  set(SDL_VIDEO_VULKAN_SURFACE 1)
 endif()
 
 # Dummies

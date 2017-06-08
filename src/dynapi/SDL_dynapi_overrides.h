@@ -630,3 +630,4 @@
 #define SDL_Vulkan_UnloadLibrary SDL_Vulkan_UnloadLibrary_REAL
 #define SDL_Vulkan_GetInstanceExtensions SDL_Vulkan_GetInstanceExtensions_REAL
 #define SDL_Vulkan_CreateSurface SDL_Vulkan_CreateSurface_REAL
+#define SDL_Vulkan_GetDrawableSize SDL_Vulkan_GetDrawableSize_REAL
