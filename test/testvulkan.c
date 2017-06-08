@@ -14,6 +14,10 @@
 #include <string.h>
 #include <math.h>
 
+#ifndef UINT64_MAX /* VS2008 */
+#define UINT64_MAX 18446744073709551615
+#endif
+
 #include "SDL_test_common.h"
 
 #if defined(__ANDROID__) && defined(__ARM_EABI__) && !defined(__ARM_ARCH_7A__)
@@ -83,11 +87,20 @@ VULKAN_FUNCTIONS()
 #undef VULKAN_INSTANCE_FUNCTION
 static PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = NULL;
 
+/* Based on the headers found in
+ * https://github.com/KhronosGroup/Vulkan-LoaderAndValidationLayers
+ */
+#if VK_HEADER_VERSION < 22
 enum
 {
     VK_ERROR_FRAGMENTED_POOL = -12,
+}
+#endif
+#if VK_HEADER_VERSION < 38
+enum {
     VK_ERROR_OUT_OF_POOL_MEMORY_KHR = -1000069000
 };
+#endif
 
 static const char *getVulkanResultString(VkResult result)
 {
@@ -184,7 +197,7 @@ typedef struct VulkanContext
 } VulkanContext;
 
 static SDLTest_CommonState *state;
-static VulkanContext vulkanContext = {};
+static VulkanContext vulkanContext = {0};
 
 static void shutdownVulkan(void);
 
@@ -225,14 +238,17 @@ static void loadGlobalFunctions(void)
 
 static void createInstance(void)
 {
-    VkApplicationInfo appInfo = {};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.apiVersion = VK_API_VERSION_1_0;
-    VkInstanceCreateInfo instanceCreateInfo = {};
-    instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instanceCreateInfo.pApplicationInfo = &appInfo;
+    VkApplicationInfo appInfo = {0};
+    VkInstanceCreateInfo instanceCreateInfo = {0};
     const char **extensions = NULL;
     unsigned extensionCount = 0;
+	VkResult result;
+
+
+	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.apiVersion = VK_API_VERSION_1_0;
+    instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    instanceCreateInfo.pApplicationInfo = &appInfo;
     if(!SDL_Vulkan_GetInstanceExtensions(state->windows[0], &extensionCount, NULL))
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
@@ -248,7 +264,7 @@ static void createInstance(void)
     }
     if(!SDL_Vulkan_GetInstanceExtensions(state->windows[0], &extensionCount, extensions))
     {
-        SDL_free(extensions);
+        SDL_free((void*)extensions);
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "SDL_Vulkan_GetInstanceExtensions(): %s\n",
                      SDL_GetError());
@@ -256,8 +272,8 @@ static void createInstance(void)
     }
     instanceCreateInfo.enabledExtensionCount = extensionCount;
     instanceCreateInfo.ppEnabledExtensionNames = extensions;
-    VkResult result = vkCreateInstance(&instanceCreateInfo, NULL, &vulkanContext.instance);
-    SDL_free(extensions);
+    result = vkCreateInstance(&instanceCreateInfo, NULL, &vulkanContext.instance);
+    SDL_free((void*)extensions);
     if(result != VK_SUCCESS)
     {
         vulkanContext.instance = VK_NULL_HANDLE;
@@ -289,8 +305,8 @@ static void loadInstanceFunctions(void)
 static void createSurface(void)
 {
     if(!SDL_Vulkan_CreateSurface(state->windows[0],
-                                 (SDL_vulkanInstance)vulkanContext.instance,
-                                 (SDL_vulkanSurface *)&vulkanContext.surface))
+                                 vulkanContext.instance,
+                                 &vulkanContext.surface))
     {
         vulkanContext.surface = VK_NULL_HANDLE;
         SDL_LogError(
@@ -302,6 +318,13 @@ static void createSurface(void)
 static void findPhysicalDevice(void)
 {
     uint32_t physicalDeviceCount = 0;
+	VkPhysicalDevice *physicalDevices;
+	VkQueueFamilyProperties *queueFamiliesProperties = NULL;
+    uint32_t queueFamiliesPropertiesAllocatedSize = 0;
+    VkExtensionProperties *deviceExtensions = NULL;
+    uint32_t deviceExtensionsAllocatedSize = 0;
+	uint32_t physicalDeviceIndex;
+
     VkResult result =
         vkEnumeratePhysicalDevices(vulkanContext.instance, &physicalDeviceCount, NULL);
     if(result != VK_SUCCESS)
@@ -317,7 +340,7 @@ static void findPhysicalDevice(void)
                      "vkEnumeratePhysicalDevices(): no physical devices\n");
         quit(2);
     }
-    VkPhysicalDevice *physicalDevices = SDL_malloc(sizeof(VkPhysicalDevice) * physicalDeviceCount);
+    physicalDevices = SDL_malloc(sizeof(VkPhysicalDevice) * physicalDeviceCount);
     if(!physicalDevices)
     {
         SDL_OutOfMemory();
@@ -333,20 +356,22 @@ static void findPhysicalDevice(void)
                      getVulkanResultString(result));
         quit(2);
     }
-    VkQueueFamilyProperties *queueFamiliesProperties = NULL;
-    uint32_t queueFamiliesPropertiesAllocatedSize = 0;
-    VkExtensionProperties *deviceExtensions = NULL;
-    uint32_t deviceExtensionsAllocatedSize = 0;
     vulkanContext.physicalDevice = NULL;
-    for(uint32_t physicalDeviceIndex = 0; physicalDeviceIndex < physicalDeviceCount;
+    for(physicalDeviceIndex = 0; physicalDeviceIndex < physicalDeviceCount;
         physicalDeviceIndex++)
     {
-        VkPhysicalDevice physicalDevice = physicalDevices[physicalDeviceIndex];
+        uint32_t queueFamiliesCount = 0;
+		uint32_t queueFamilyIndex;
+        uint32_t deviceExtensionCount = 0;
+		SDL_bool hasSwapchainExtension = SDL_FALSE;
+		uint32_t i;
+
+
+		VkPhysicalDevice physicalDevice = physicalDevices[physicalDeviceIndex];
         vkGetPhysicalDeviceProperties(physicalDevice, &vulkanContext.physicalDeviceProperties);
         if(VK_VERSION_MAJOR(vulkanContext.physicalDeviceProperties.apiVersion) < 1)
             continue;
         vkGetPhysicalDeviceFeatures(physicalDevice, &vulkanContext.physicalDeviceFeatures);
-        uint32_t queueFamiliesCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamiliesCount, NULL);
         if(queueFamiliesCount == 0)
             continue;
@@ -368,14 +393,15 @@ static void findPhysicalDevice(void)
             physicalDevice, &queueFamiliesCount, queueFamiliesProperties);
         vulkanContext.graphicsQueueFamilyIndex = queueFamiliesCount;
         vulkanContext.presentQueueFamilyIndex = queueFamiliesCount;
-        for(uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamiliesCount;
+        for(queueFamilyIndex = 0; queueFamilyIndex < queueFamiliesCount;
             queueFamilyIndex++)
         {
-            if(queueFamiliesProperties[queueFamilyIndex].queueCount == 0)
+            VkBool32 supported = 0;
+
+			if(queueFamiliesProperties[queueFamilyIndex].queueCount == 0)
                 continue;
             if(queueFamiliesProperties[queueFamilyIndex].queueFlags & VK_QUEUE_GRAPHICS_BIT)
                 vulkanContext.graphicsQueueFamilyIndex = queueFamilyIndex;
-            VkBool32 supported = 0;
             result = vkGetPhysicalDeviceSurfaceSupportKHR(
                 physicalDevice, queueFamilyIndex, vulkanContext.surface, &supported);
             if(result != VK_SUCCESS)
@@ -399,7 +425,6 @@ static void findPhysicalDevice(void)
             continue;
         if(vulkanContext.presentQueueFamilyIndex == queueFamiliesCount) // no good queues found
             continue;
-        uint32_t deviceExtensionCount = 0;
         result =
             vkEnumerateDeviceExtensionProperties(physicalDevice, NULL, &deviceExtensionCount, NULL);
         if(result != VK_SUCCESS)
@@ -440,8 +465,7 @@ static void findPhysicalDevice(void)
                          getVulkanResultString(result));
             quit(2);
         }
-        SDL_bool hasSwapchainExtension = SDL_FALSE;
-        for(uint32_t i = 0; i < deviceExtensionCount; i++)
+        for(i = 0; i < deviceExtensionCount; i++)
         {
             if(0 == SDL_strcmp(deviceExtensions[i].extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME))
             {
@@ -466,23 +490,26 @@ static void findPhysicalDevice(void)
 
 static void createDevice(void)
 {
-    VkDeviceQueueCreateInfo deviceQueueCreateInfo[1] = {};
-    deviceQueueCreateInfo->sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    VkDeviceQueueCreateInfo deviceQueueCreateInfo[1] = {0};
+    static const float queuePriority[] = {1.0f};
+    VkDeviceCreateInfo deviceCreateInfo = {0};
+    static const char *const deviceExtensionNames[] = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    };
+	VkResult result;
+
+	deviceQueueCreateInfo->sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     deviceQueueCreateInfo->queueFamilyIndex = vulkanContext.graphicsQueueFamilyIndex;
     deviceQueueCreateInfo->queueCount = 1;
-    static const float queuePriority[] = {1.0f};
     deviceQueueCreateInfo->pQueuePriorities = &queuePriority[0];
-    VkDeviceCreateInfo deviceCreateInfo = {};
+
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceCreateInfo.queueCreateInfoCount = 1;
     deviceCreateInfo.pQueueCreateInfos = deviceQueueCreateInfo;
     deviceCreateInfo.pEnabledFeatures = NULL;
-    static const char *const deviceExtensionNames[] = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-    };
     deviceCreateInfo.enabledExtensionCount = SDL_arraysize(deviceExtensionNames);
     deviceCreateInfo.ppEnabledExtensionNames = deviceExtensionNames;
-    VkResult result = vkCreateDevice(
+    result = vkCreateDevice(
         vulkanContext.physicalDevice, &deviceCreateInfo, NULL, &vulkanContext.device);
     if(result != VK_SUCCESS)
     {
@@ -530,9 +557,11 @@ static void getQueues(void)
 
 static void createSemaphore(VkSemaphore *semaphore)
 {
-    VkSemaphoreCreateInfo createInfo = {};
+	VkResult result;
+
+    VkSemaphoreCreateInfo createInfo = {0};
     createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    VkResult result = vkCreateSemaphore(vulkanContext.device, &createInfo, NULL, semaphore);
+    result = vkCreateSemaphore(vulkanContext.device, &createInfo, NULL, semaphore);
     if(result != VK_SUCCESS)
     {
         *semaphore = VK_NULL_HANDLE;
@@ -613,9 +642,11 @@ static void getSurfaceFormats(void)
 
 static void getSwapchainImages(void)
 {
+	VkResult result;
+
     SDL_free(vulkanContext.swapchainImages);
     vulkanContext.swapchainImages = NULL;
-    VkResult result = vkGetSwapchainImagesKHR(
+    result = vkGetSwapchainImagesKHR(
         vulkanContext.device, vulkanContext.swapchain, &vulkanContext.swapchainImageCount, NULL);
     if(result != VK_SUCCESS)
     {
@@ -649,6 +680,11 @@ static void getSwapchainImages(void)
 
 static SDL_bool createSwapchain(void)
 {
+	uint32_t i;
+	int w, h;
+	VkSwapchainCreateInfoKHR createInfo = {0};
+	VkResult result;
+
     // pick an image count
     vulkanContext.swapchainDesiredImageCount = vulkanContext.surfaceCapabilities.minImageCount + 1;
     if(vulkanContext.swapchainDesiredImageCount > vulkanContext.surfaceCapabilities.maxImageCount
@@ -666,7 +702,7 @@ static SDL_bool createSwapchain(void)
     else
     {
         vulkanContext.surfaceFormat = vulkanContext.surfaceFormats[0];
-        for(uint32_t i = 0; i < vulkanContext.surfaceFormatsCount; i++)
+        for(i = 0; i < vulkanContext.surfaceFormatsCount; i++)
         {
             if(vulkanContext.surfaceFormats[i].format == VK_FORMAT_R8G8B8A8_UNORM)
             {
@@ -677,14 +713,12 @@ static SDL_bool createSwapchain(void)
     }
 
     // get size
-    int w, h;
     SDL_GL_GetDrawableSize(state->windows[0], &w, &h);
     vulkanContext.swapchainSize.width = w;
     vulkanContext.swapchainSize.height = h;
     if(w == 0 || h == 0)
         return SDL_FALSE;
 
-    VkSwapchainCreateInfoKHR createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = vulkanContext.surface;
     createInfo.minImageCount = vulkanContext.swapchainDesiredImageCount;
@@ -699,7 +733,7 @@ static SDL_bool createSwapchain(void)
     createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = vulkanContext.swapchain;
-    VkResult result =
+    result =
         vkCreateSwapchainKHR(vulkanContext.device, &createInfo, NULL, &vulkanContext.swapchain);
     if(createInfo.oldSwapchain)
         vkDestroySwapchainKHR(vulkanContext.device, createInfo.oldSwapchain, NULL);
@@ -715,7 +749,7 @@ static SDL_bool createSwapchain(void)
     return SDL_TRUE;
 }
 
-static void destorySwapchain(void)
+static void destroySwapchain(void)
 {
     if(vulkanContext.swapchain)
         vkDestroySwapchainKHR(vulkanContext.device, vulkanContext.swapchain, NULL);
@@ -744,12 +778,14 @@ static void destroyCommandPool(void)
 
 static void createCommandPool(void)
 {
-    VkCommandPoolCreateInfo createInfo = {};
+	VkResult result;
+
+    VkCommandPoolCreateInfo createInfo = {0};
     createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     createInfo.flags =
         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
     createInfo.queueFamilyIndex = vulkanContext.graphicsQueueFamilyIndex;
-    VkResult result =
+    result =
         vkCreateCommandPool(vulkanContext.device, &createInfo, NULL, &vulkanContext.commandPool);
     if(result != VK_SUCCESS)
     {
@@ -763,14 +799,16 @@ static void createCommandPool(void)
 
 static void createCommandBuffers(void)
 {
-    VkCommandBufferAllocateInfo allocateInfo = {};
+	VkResult result;
+
+    VkCommandBufferAllocateInfo allocateInfo = {0};
     allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocateInfo.commandPool = vulkanContext.commandPool;
     allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocateInfo.commandBufferCount = vulkanContext.swapchainImageCount;
     vulkanContext.commandBuffers =
         SDL_malloc(sizeof(VkCommandBuffer) * vulkanContext.swapchainImageCount);
-    VkResult result =
+    result =
         vkAllocateCommandBuffers(vulkanContext.device, &allocateInfo, vulkanContext.commandBuffers);
     if(result != VK_SUCCESS)
     {
@@ -785,18 +823,22 @@ static void createCommandBuffers(void)
 
 static void createFences(void)
 {
+	uint32_t i;
+
     vulkanContext.fences = SDL_malloc(sizeof(VkFence) * vulkanContext.swapchainImageCount);
     if(!vulkanContext.fences)
     {
         SDL_OutOfMemory();
         quit(2);
     }
-    for(uint32_t i = 0; i < vulkanContext.swapchainImageCount; i++)
+    for(i = 0; i < vulkanContext.swapchainImageCount; i++)
     {
-        VkFenceCreateInfo createInfo = {};
+		VkResult result;
+
+        VkFenceCreateInfo createInfo = {0};
         createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-        VkResult result =
+        result =
             vkCreateFence(vulkanContext.device, &createInfo, NULL, &vulkanContext.fences[i]);
         if(result != VK_SUCCESS)
         {
@@ -816,9 +858,11 @@ static void createFences(void)
 
 static void destroyFences(void)
 {
+	uint32_t i;
+
     if(!vulkanContext.fences)
         return;
-    for(uint32_t i = 0; i < vulkanContext.swapchainImageCount; i++)
+    for(i = 0; i < vulkanContext.swapchainImageCount; i++)
     {
         vkDestroyFence(vulkanContext.device, vulkanContext.fences[i], NULL);
     }
@@ -833,7 +877,7 @@ static void recordPipelineImageBarrier(VkCommandBuffer commandBuffer,
                                        VkImageLayout destLayout,
                                        VkImage image)
 {
-    VkImageMemoryBarrier barrier = {};
+    VkImageMemoryBarrier barrier = {0};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.srcAccessMask = sourceAccessMask;
     barrier.dstAccessMask = destAccessMask;
@@ -863,6 +907,9 @@ static void rerecordCommandBuffer(uint32_t frameIndex, const VkClearColorValue *
 {
     VkCommandBuffer commandBuffer = vulkanContext.commandBuffers[frameIndex];
     VkImage image = vulkanContext.swapchainImages[frameIndex];
+	VkCommandBufferBeginInfo beginInfo = {0};
+    VkImageSubresourceRange clearRange = {0};
+
     VkResult result = vkResetCommandBuffer(commandBuffer, 0);
     if(result != VK_SUCCESS)
     {
@@ -871,7 +918,6 @@ static void rerecordCommandBuffer(uint32_t frameIndex, const VkClearColorValue *
                      getVulkanResultString(result));
         quit(2);
     }
-    VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
     result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
@@ -888,7 +934,6 @@ static void rerecordCommandBuffer(uint32_t frameIndex, const VkClearColorValue *
                                VK_IMAGE_LAYOUT_UNDEFINED,
                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                image);
-    VkImageSubresourceRange clearRange = {};
     clearRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     clearRange.baseMipLevel = 0;
     clearRange.levelCount = 1;
@@ -918,7 +963,7 @@ static void destroySwapchainAndSwapchainSpecificStuff(SDL_bool doDestroySwapchai
     destroyCommandBuffers();
     destroyCommandPool();
     if(doDestroySwapchain)
-        destorySwapchain();
+        destroySwapchain();
 }
 
 static SDL_bool createNewSwapchainAndSwapchainSpecificStuff(void)
@@ -969,6 +1014,15 @@ static void shutdownVulkan(void)
 
 static SDL_bool render(void)
 {
+    uint32_t frameIndex;
+    VkResult result;
+    double currentTime;
+    VkClearColorValue clearColor = {0};
+    VkPipelineStageFlags waitDestStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    VkSubmitInfo submitInfo = {0};
+    VkPresentInfoKHR presentInfo = {0};
+    int w, h;
+
     if(!vulkanContext.swapchain)
     {
         SDL_bool retval = createNewSwapchainAndSwapchainSpecificStuff();
@@ -976,8 +1030,7 @@ static SDL_bool render(void)
             SDL_Delay(100);
         return retval;
     }
-    uint32_t frameIndex;
-    VkResult result = vkAcquireNextImageKHR(vulkanContext.device,
+    result = vkAcquireNextImageKHR(vulkanContext.device,
                                             vulkanContext.swapchain,
                                             UINT64_MAX,
                                             vulkanContext.imageAvailableSemaphore,
@@ -1007,15 +1060,12 @@ static SDL_bool render(void)
             SDL_LOG_CATEGORY_APPLICATION, "vkResetFences(): %s\n", getVulkanResultString(result));
         quit(2);
     }
-    double currentTime = (double)SDL_GetPerformanceCounter() / SDL_GetPerformanceFrequency();
-    VkClearColorValue clearColor = {};
-    clearColor.float32[0] = 0.5 + 0.5 * SDL_sin(currentTime);
-    clearColor.float32[1] = 0.5 + 0.5 * SDL_sin(currentTime + M_PI * 2 / 3);
-    clearColor.float32[2] = 0.5 + 0.5 * SDL_sin(currentTime + M_PI * 4 / 3);
+    currentTime = (double)SDL_GetPerformanceCounter() / SDL_GetPerformanceFrequency();
+    clearColor.float32[0] = (float)(0.5 + 0.5 * SDL_sin(currentTime));
+    clearColor.float32[1] = (float)(0.5 + 0.5 * SDL_sin(currentTime + M_PI * 2 / 3));
+    clearColor.float32[2] = (float)(0.5 + 0.5 * SDL_sin(currentTime + M_PI * 4 / 3));
     clearColor.float32[3] = 1;
     rerecordCommandBuffer(frameIndex, &clearColor);
-    VkPipelineStageFlags waitDestStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = &vulkanContext.imageAvailableSemaphore;
@@ -1032,7 +1082,6 @@ static SDL_bool render(void)
             SDL_LOG_CATEGORY_APPLICATION, "vkQueueSubmit(): %s\n", getVulkanResultString(result));
         quit(2);
     }
-    VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = &vulkanContext.renderingFinishedSemaphore;
@@ -1051,7 +1100,6 @@ static SDL_bool render(void)
                      getVulkanResultString(result));
         quit(2);
     }
-    int w, h;
     SDL_GL_GetDrawableSize(state->windows[0], &w, &h);
     if(w != (int)vulkanContext.swapchainSize.width || h != (int)vulkanContext.swapchainSize.height)
     {
@@ -1063,12 +1111,10 @@ static SDL_bool render(void)
 int main(int argc, char *argv[])
 {
     int fsaa, accel;
-    int value;
     int i, done;
     SDL_DisplayMode mode;
     SDL_Event event;
     Uint32 then, now, frames;
-    int status;
     int dw, dh;
 
     /* Enable standard application logging */
@@ -1129,7 +1175,8 @@ int main(int argc, char *argv[])
             SDLTest_CommonEvent(state, &event, &done);
         }
 
-        render();
+        if (!done)
+        	render();
     }
 
     /* Print out some timing information */

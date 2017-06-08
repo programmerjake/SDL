@@ -26,6 +26,7 @@
 #include "SDL_messagebox.h"
 #include "SDL_shape.h"
 #include "SDL_thread.h"
+#include "SDL_vulkan.h"
 
 /* The SDL video driver */
 
@@ -267,7 +268,8 @@ struct SDL_VideoDevice
     int (*Vulkan_LoadLibrary) (_THIS, const char *path);
     void (*Vulkan_UnloadLibrary) (_THIS);
     SDL_bool (*Vulkan_GetInstanceExtensions) (_THIS, SDL_Window *window, unsigned *count, const char **names);
-    SDL_bool (*Vulkan_CreateSurface) (_THIS, SDL_Window *window, SDL_vulkanInstance instance, SDL_vulkanSurface *surface);
+    SDL_bool (*Vulkan_CreateSurface) (_THIS, SDL_Window *window, VkInstance instance, VkSurfaceKHR *surface);
+    void (*Vulkan_GetDrawableSize) (_THIS, SDL_Window * window, int *w, int *h);
 
     /* * * */
     /*

@@ -232,6 +232,13 @@ MIR_CreateDevice(int device_index)
 
     device->ShowMessageBox = NULL;
 
+#if SDL_VIDEO_VULKAN_SURFACE
+    device->Vulkan_LoadLibrary = MIR_Vulkan_LoadLibrary;
+    device->Vulkan_UnloadLibrary = MIR_Vulkan_UnloadLibrary;
+    device->Vulkan_GetInstanceExtensions = MIR_Vulkan_GetInstanceExtensions;
+    device->Vulkan_CreateSurface = MIR_Vulkan_CreateSurface;
+#endif
+
     return device;
 }
 

@@ -20,7 +20,7 @@
 */
 #include "../../SDL_internal.h"
 
-#if SDL_VIDEO_DRIVER_X11
+#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_X11
 
 #include "SDL_x11video.h"
 #include "SDL_assert.h"
@@ -28,7 +28,10 @@
 #include "SDL_loadso.h"
 #include "SDL_x11vulkan.h"
 
-#if SDL_VULKAN_SUPPORTED
+#include <X11/Xlib.h>
+//#include <xcb/xcb.h>
+typedef uint32_t xcb_window_t;
+typedef uint32_t xcb_visualid_t;
 
 int X11_Vulkan_LoadLibrary(_THIS, const char *path)
 {
@@ -50,7 +53,7 @@ int X11_Vulkan_LoadLibrary(_THIS, const char *path)
     _this->vulkan_config.loader_handle = SDL_LoadObject(path);
     if(!_this->vulkan_config.loader_handle)
         return -1;
-    SDL_strlcpy(_this->gl_config.driver_path, path, SDL_arraysize(_this->gl_config.driver_path));
+    SDL_strlcpy(_this->vulkan_config.loader_path, path, SDL_arraysize(_this->vulkan_config.loader_path));
     vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)SDL_LoadFunction(
         _this->vulkan_config.loader_handle, "vkGetInstanceProcAddr");
     if(!vkGetInstanceProcAddr)
@@ -79,7 +82,8 @@ int X11_Vulkan_LoadLibrary(_THIS, const char *path)
     SDL_free(extensions);
     if(!hasSurfaceExtension)
     {
-        SDL_SetError("Vulkan doesn't implement the " VK_KHR_SURFACE_EXTENSION_NAME " extension");
+        SDL_SetError("Installed Vulkan doesn't implement the "
+                     VK_KHR_SURFACE_EXTENSION_NAME " extension");
         goto fail;
     }
     if(hasXlibSurfaceExtension)
@@ -88,8 +92,9 @@ int X11_Vulkan_LoadLibrary(_THIS, const char *path)
     }
     else if(!hasXCBSurfaceExtension)
     {
-        SDL_SetError("Vulkan doesn't implement either of the " VK_KHR_XCB_SURFACE_EXTENSION_NAME
-                     " extension or the " VK_KHR_XLIB_SURFACE_EXTENSION_NAME " extension");
+        SDL_SetError("Installed Vulkan doesn't implement either the "
+                     VK_KHR_XCB_SURFACE_EXTENSION_NAME "extension or the "
+                     VK_KHR_XLIB_SURFACE_EXTENSION_NAME " extension");
         goto fail;
     }
     else
@@ -159,8 +164,8 @@ SDL_bool X11_Vulkan_GetInstanceExtensions(_THIS,
 
 SDL_bool X11_Vulkan_CreateSurface(_THIS,
                                   SDL_Window *window,
-                                  SDL_vulkanInstance instance,
-                                  SDL_vulkanSurface *surface)
+                                  VkInstance instance,
+                                  VkSurfaceKHR *surface)
 {
     SDL_VideoData *videoData = (SDL_VideoData *)_this->driverdata;
     SDL_WindowData *windowData = (SDL_WindowData *)window->driverdata;
@@ -180,8 +185,8 @@ SDL_bool X11_Vulkan_CreateSurface(_THIS,
         VkResult result;
         if(!vkCreateXcbSurfaceKHR)
         {
-            SDL_SetError("Vulkan instance does not have " VK_KHR_XCB_SURFACE_EXTENSION_NAME
-                         " extension");
+            SDL_SetError(VK_KHR_XCB_SURFACE_EXTENSION_NAME
+                         " extension is not enabled in the Vulkan instance.");
             return SDL_FALSE;
         }
         createInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
@@ -192,7 +197,8 @@ SDL_bool X11_Vulkan_CreateSurface(_THIS,
             return SDL_FALSE;
         }
         createInfo.window = (xcb_window_t)windowData->xwindow;
-        result = vkCreateXcbSurfaceKHR(instance, &createInfo, NULL, (VkSurfaceKHR *)surface);
+        result = vkCreateXcbSurfaceKHR(instance, &createInfo,
+                                       NULL, surface);
         if(result != VK_SUCCESS)
         {
             SDL_SetError("vkCreateXcbSurfaceKHR failed: %s", SDL_Vulkan_GetResultString(result));
@@ -209,14 +215,15 @@ SDL_bool X11_Vulkan_CreateSurface(_THIS,
         VkResult result;
         if(!vkCreateXlibSurfaceKHR)
         {
-            SDL_SetError("Vulkan instance does not have " VK_KHR_XLIB_SURFACE_EXTENSION_NAME
-                         " extension");
+            SDL_SetError(VK_KHR_XLIB_SURFACE_EXTENSION_NAME
+                         " extension is not enabled in the Vulkan instance.");
             return SDL_FALSE;
         }
         createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
         createInfo.dpy = videoData->display;
         createInfo.window = (xcb_window_t)windowData->xwindow;
-        result = vkCreateXlibSurfaceKHR(instance, &createInfo, NULL, (VkSurfaceKHR *)surface);
+        result = vkCreateXlibSurfaceKHR(instance, &createInfo,
+                                        NULL, surface);
         if(result != VK_SUCCESS)
         {
             SDL_SetError("vkCreateXlibSurfaceKHR failed: %s", SDL_Vulkan_GetResultString(result));
@@ -228,4 +235,4 @@ SDL_bool X11_Vulkan_CreateSurface(_THIS,
 
 #endif
 
-#endif
+/* vim: set ts=4 sw=4 expandtab: */

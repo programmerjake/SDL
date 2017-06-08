@@ -745,7 +745,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -851,6 +850,7 @@ enable_video_opengl
 enable_video_opengles
 enable_video_opengles1
 enable_video_opengles2
+enable_video_vulkan
 enable_libudev
 enable_dbus
 enable_ime
@@ -917,7 +917,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE}'
@@ -1170,15 +1169,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1316,7 +1306,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1469,7 +1459,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1607,6 +1596,7 @@ Optional Features:
                           include OpenGL ES 1.1 support [[default=yes]]
   --enable-video-opengles2
                           include OpenGL ES 2.0 support [[default=yes]]
+  --enable-video-vulkan   include Vulkan surface support [[default=yes]]
   --enable-libudev        enable libudev support [[default=yes]]
   --enable-dbus           enable D-Bus support [[default=yes]]
   --enable-ime            enable IME support [[default=yes]]
@@ -21613,6 +21603,46 @@ $as_echo "#define SDL_VIDEO_RENDER_OGL_ES2 1" >>confdefs.h
     fi
 }
 
+# Check whether --enable-video-vulkan was given.
+if test "${enable_video_vulkan+set}" = set; then :
+  enableval=$enable_video_vulkan;
+else
+  enable_video_vulkan=yes
+fi
+
+
+CheckVulkan()
+{
+    if test x$enable_video = xyes -a x$enable_video_vulkan = xyes; then
+        vsdk_include_dir="${VULKAN_SDK}/include"
+        vulkan_header="vulkan/vulkan.h"
+        save_CPPFLAGS="$CPPFLAGS"
+        CPPFLAGS="${save_CPPFLAGS} -I$vsdk_include_dir"
+        as_ac_Header=`$as_echo "ac_cv_header_$vulkan_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$vulkan_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  have_vulkan_hdr=yes
+else
+  have_vulkan_hdr=no
+fi
+
+
+        CPPFLAGS="$save_CPPFLAGS"
+    fi
+    if test x$have_vulkan_hdr = xyes; then
+        # vulkan.h has been found in either $VULKAN_SDK/include or along the
+        # the standard include path. Unfortunately there seems no easy
+        # way to find out which, so...
+        if test -n "$VULKAN_SDK" -a -f "$vsdk_include_dir/$vulkan_header"; then
+            EXTRA_CFLAGS="$EXTRA_CFLAGS -I$vsdk_include_dir"
+        fi
+
+$as_echo "#define SDL_VIDEO_VULKAN_SURFACE 1" >>confdefs.h
+
+        SUMMARY_video="${SUMMARY_video} vulkan"
+    fi
+}
+
 CheckInputEvents()
 {
             { $as_echo "$as_me:${as_lineno-$LINENO}: checking for Linux 2.4 unified input interface" >&5
@@ -23286,6 +23316,7 @@ case "$host" in
         CheckDirectFB
         CheckOpenGLX11
         CheckOpenGLESX11
+        CheckVulkan
         CheckMir
         CheckWayland
         CheckLibUDev
@@ -23446,6 +23477,7 @@ $as_echo "#define SDL_TIMER_UNIX 1" >>confdefs.h
         CheckWINDOWS
         CheckWINDOWSGL
         CheckWINDOWSGLES
+        CheckVulkan
         CheckDIRECTX
 
         # Set up the core platform files
@@ -23700,6 +23732,7 @@ $as_echo "#define SDL_FILESYSTEM_HAIKU 1" >>confdefs.h
         CheckDummyAudio
         CheckDLOPEN
         CheckPTHREAD
+        CheckVulkan
 
         # Set up files for the audio library
         if test x$enable_audio = xyes; then
@@ -23781,6 +23814,9 @@ $as_echo "#define SDL_VIDEO_RENDER_OGL_ES2 1" >>confdefs.h
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Wl,-framework,OpenGLES"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Wl,-framework,QuartzCore"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Wl,-framework,UIKit"
+        if test x$ac_cv_header_vulkan_vulkan_h = xyes; then
+            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Wl,-framework,QuartzCore"
+        fi
         ;;
     *-*-darwin* )
         # This could be either full "Mac OS X", or plain "Darwin" which is
@@ -23802,6 +23838,7 @@ $as_echo "#define SDL_VIDEO_RENDER_OGL_ES2 1" >>confdefs.h
         CheckX11
         CheckMacGL
         CheckOpenGLX11
+        CheckVulkan
         CheckPTHREAD
 
         # Set up files for the audio library
@@ -23866,6 +23903,9 @@ $as_echo "#define SDL_TIMER_UNIX 1" >>confdefs.h
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Wl,-framework,Cocoa"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Wl,-framework,Carbon"
         EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Wl,-framework,IOKit"
+        if test x$ac_cv_header_vulkan_vulkan_h = xyes; then
+            EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Wl,-framework,QuartzCore"
+        fi
         ;;
     *-nacl|*-pnacl)
         ARCH=nacl

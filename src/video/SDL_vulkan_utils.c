@@ -18,18 +18,29 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-#include "SDL_vulkan.h"
+#include "../SDL_internal.h"
+
+#include "SDL_vulkan_internal.h"
 #include "SDL_error.h"
 
-#if SDL_VULKAN_SUPPORTED
+#if SDL_VIDEO_VULKAN_SURFACE
 
+/* Based on the headers found in
+ * https://github.com/KhronosGroup/Vulkan-LoaderAndValidationLayers
+ */
+#if VK_HEADER_VERSION < 22
 enum
 {
     VK_ERROR_FRAGMENTED_POOL = -12,
+}
+#endif
+#if VK_HEADER_VERSION < 38
+enum {
     VK_ERROR_OUT_OF_POOL_MEMORY_KHR = -1000069000
 };
+#endif
 
-extern const char *SDL_Vulkan_GetResultString(VkResult result)
+const char *SDL_Vulkan_GetResultString(VkResult result)
 {
     switch((int)result)
     {
@@ -94,7 +105,7 @@ extern const char *SDL_Vulkan_GetResultString(VkResult result)
     return "VK_<Unknown>";
 }
 
-extern VkExtensionProperties *SDL_Vulkan_CreateInstanceExtensionsList(
+VkExtensionProperties *SDL_Vulkan_CreateInstanceExtensionsList(
     PFN_vkEnumerateInstanceExtensionProperties vkEnumerateInstanceExtensionProperties,
     Uint32 *extensionCount)
 {
@@ -148,13 +159,15 @@ SDL_bool SDL_Vulkan_GetInstanceExtensions_Helper(unsigned *userCount,
 {
     if(userNames)
     {
+		unsigned int i;
+
         if(*userCount != nameCount)
         {
             SDL_SetError(
                 "count doesn't match count from previous call of SDL_Vulkan_GetInstanceExtensions");
             return SDL_FALSE;
         }
-        for(unsigned i = 0; i < nameCount; i++)
+        for(i = 0; i < nameCount; i++)
         {
             userNames[i] = names[i];
         }
