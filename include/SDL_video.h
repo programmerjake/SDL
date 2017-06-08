@@ -117,7 +117,7 @@ typedef enum
     SDL_WINDOW_UTILITY       = 0x00020000,      /**< window should be treated as a utility window */
     SDL_WINDOW_TOOLTIP       = 0x00040000,      /**< window should be treated as a tooltip */
     SDL_WINDOW_POPUP_MENU    = 0x00080000,      /**< window should be treated as a popup menu */
-    SDL_WINDOW_VULKAN = 0x10000000,             /**< window usable with Vulkan *//* value matches Tizen's implementation */
+    SDL_WINDOW_VULKAN        = 0x00100000       /**< window usable for Vulkan surface */
 } SDL_WindowFlags;
 
 /**
@@ -224,17 +224,6 @@ typedef enum
     SDL_GL_CONTEXT_RELEASE_BEHAVIOR_NONE   = 0x0000,
     SDL_GL_CONTEXT_RELEASE_BEHAVIOR_FLUSH  = 0x0001
 } SDL_GLcontextReleaseFlag;
-
-/**
- *  \brief An opaque handle to a Vulkan instance.
- */
-typedef void *SDL_vulkanInstance; /* VK_DEFINE_HANDLE(VkInstance) */
-
-/**
- *  \brief An opaque handle to a Vulkan surface.
- */
-typedef Uint64 SDL_vulkanSurface; /* VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkSurfaceKHR) */
-
 
 /* Function prototypes */
 
@@ -1216,134 +1205,6 @@ extern DECLSPEC void SDLCALL SDL_GL_SwapWindow(SDL_Window * window);
 extern DECLSPEC void SDLCALL SDL_GL_DeleteContext(SDL_GLContext context);
 
 /* @} *//* OpenGL support functions */
-
-
-/**
- *  \name Vulkan support functions
- *
- *  \note Designed to be compatible with Tizen's implementation of Vulkan in SDL
- */
-/* @{ */
-
-/**
- *  \brief Dynamically load a Vulkan loader library.
- *
- *  \param path The platform dependent Vulkan loader library name, or \c NULL to open the
- *              default Vulkan loader library.
- *
- *  \return \c 0 on success, or \c -1 if the library couldn't be loaded.
- *
- *  This should be done after initializing the video driver, but before
- *  creating any Vulkan windows.  If no Vulkan loader library is loaded, the default
- *  library will be loaded upon creation of the first Vulkan window.
- *
- *  \note If you do this, you need to retrieve all of the Vulkan functions used in
- *        your program from the dynamic library using \c SDL_Vulkan_GetVkGetInstanceProcAddr().
- *
- *  \sa SDL_Vulkan_GetVkGetInstanceProcAddr()
- *  \sa SDL_Vulkan_UnloadLibrary()
- */
-extern DECLSPEC int SDLCALL SDL_Vulkan_LoadLibrary(const char *path);
-
-/**
- *  \brief Get the address of the \c vkGetInstanceProcAddr function.
- */
-extern DECLSPEC void *SDLCALL SDL_Vulkan_GetVkGetInstanceProcAddr(void);
-
-/**
- *  \brief Unload the Vulkan loader library previously loaded by \c SDL_Vulkan_LoadLibrary().
- *
- *  \sa SDL_Vulkan_LoadLibrary()
- */
-extern DECLSPEC void SDLCALL SDL_Vulkan_UnloadLibrary(void);
-
-/**
- *  \brief Get the list of Vulkan instance extensions required to use \c SDL_Vulkan_CreateSurface().
- *
- *  \param window Window for which the required Vulkan instance extensions should be retrieved
- *  \param count pointer to an \c unsigned related to the number of required Vulkan instance extensions
- *  \param names \c NULL or a pointer to an array to be filled with the required Vulkan instance extensions
- *
- *  \return \c SDL_TRUE on success, \c SDL_FALSE on error.
- *
- *  If \c names is \c NULL, then return the number of required Vulkan instance extensions in \c count.
- *  If \c names is not \c NULL, then store the names of the required Vulkan instance extensions in \c names.
- *
- *  \note the returned list of extensions will contain VK_KHR_surface and zero or more platform specific extensions
- *
- *  \note \c window should have been created with the \c SDL_WINDOW_VULKAN flag.
- *
- *  \code
- *  unsigned count;
- *  // get count of required extensions
- *  if(!SDL_Vulkan_GetInstanceExtensions(window, &count, NULL))
- *      handle_error();
- *
- *  static const char *const additionalExtensions[] =
- *  {
- *      VK_EXT_DEBUG_REPORT_EXTENSION_NAME, // example additional extension
- *  };
- *  size_t additionalExtensionsCount = sizeof(additionalExtensions) / sizeof(additionalExtensions[0]);
- *  size_t extensionCount = count + additionalExtensionsCount;
- *  const char **names = malloc(sizeof(const char *) * extensionCount);
- *  if(!names)
- *      handle_error();
- *
- *  // don't change count here for compatibility with Tizen
- *
- *  // get names of required extensions
- *  if(!SDL_Vulkan_GetInstanceExtensions(window, &count, names))
- *      handle_error();
- *
- *  // copy additional extensions after required extensions
- *  for(size_t i = 0; i < additionalExtensionsCount; i++)
- *      names[i + count] = additionalExtensions[i];
- *
- *  VkInstanceCreateInfo instanceCreateInfo = {};
- *  instanceCreateInfo.enabledExtensionCount = extensionCount;
- *  instanceCreateInfo.ppEnabledExtensionNames = names;
- *  // fill in rest of instanceCreateInfo
- *
- *  VkInstance instance;
- *  // create the Vulkan instance
- *  VkResult result = vkCreateInstance(&instanceCreateInfo, NULL, &instance);
- *  free(names);
- *  \endcode
- *
- *  \sa SDL_Vulkan_CreateSurface()
- */
-extern DECLSPEC SDL_bool SDLCALL SDL_Vulkan_GetInstanceExtensions(SDL_Window *window, unsigned *count, const char **names);
-
-/**
- *  \brief Create a Vulkan surface for a window.
- *
- *  \param window Window for which the Vulkan surface should be created
- *  \param instance Vulkan instance for which the Vulkan surface should be created
- *  \param surface pointer to the variable for storing the new Vulkan surface
- *
- *  \return \c SDL_TRUE on success, \c SDL_FALSE on error.
- *
- *  \code
- *  VkInstance instance;
- *  SDL_Window *window;
- *
- *  // create instance and window
- *
- *  // create the Vulkan surface
- *  VkSurfaceKHR surface;
- *  if(!SDL_Vulkan_CreateSurface(window, instance, (SDL_vulkanSurface *)&surface))
- *      handle_error();
- *  \endcode
- *
- *  \note \c window should have been created with the \c SDL_WINDOW_VULKAN flag.
- *
- *  \note \c instance should have been created with the extensions returned by \c SDL_Vulkan_CreateSurface() enabled
- *
- *  \sa SDL_Vulkan_GetInstanceExtensions()
- */
-extern DECLSPEC SDL_bool SDLCALL SDL_Vulkan_CreateSurface(SDL_Window *window, SDL_vulkanInstance instance, SDL_vulkanSurface *surface);
-
-/* @} *//* Vulkan support functions */
 
 
 /* Ends C function definitions when using C++ */

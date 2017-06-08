@@ -1488,8 +1488,8 @@ X11_SetWindowGrab(_THIS, SDL_Window * window, SDL_bool grabbed)
             int attempts;
             int result;
 
-            /* Try for up to ~250ms to grab. If it still fails, stop trying. */
-            for (attempts = 0; attempts < 5; attempts++) {
+            /* Try for up to 5000ms (5s) to grab. If it still fails, stop trying. */
+            for (attempts = 0; attempts < 100; attempts++) {
                 result = X11_XGrabPointer(display, data->xwindow, True, 0, GrabModeAsync,
                                  GrabModeAsync, data->xwindow, None, CurrentTime);
                 if (result == GrabSuccess) {
@@ -1576,7 +1576,7 @@ X11_GetWindowWMInfo(_THIS, SDL_Window * window, SDL_SysWMinfo * info)
         info->info.x11.window = data->xwindow;
         return SDL_TRUE;
     } else {
-        SDL_SetError("Application not compiled with SDL %d.%d\n",
+        SDL_SetError("Application not compiled with SDL %d.%d",
                      SDL_MAJOR_VERSION, SDL_MINOR_VERSION);
         return SDL_FALSE;
     }

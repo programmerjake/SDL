@@ -18,26 +18,35 @@
      misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 */
-#ifndef _SDL_vulkan_h
-#define _SDL_vulkan_h
 
-#include "SDL_vulkan_internal.h"
+/*
+ * @author Mark Callow, www.edgewise-consulting.com. Based on Jacob Lifshay's
+ * SDL_x11vulkan.h.
+ */
 
-#if SDL_VULKAN_SUPPORTED
+#include "../../SDL_internal.h"
 
-extern const char *SDL_Vulkan_GetResultString(VkResult result);
+#ifndef _SDL_mirvulkan_h
+#define _SDL_mirvulkan_h
 
-extern VkExtensionProperties *SDL_Vulkan_CreateInstanceExtensionsList(
-    PFN_vkEnumerateInstanceExtensionProperties vkEnumerateInstanceExtensionProperties,
-    Uint32 *extensionCount); /* free returned list with SDL_free */
+#include "../SDL_vulkan_internal.h"
+#include "../SDL_sysvideo.h"
 
-/* implements functionality of SDL_Vulkan_GetInstanceExtensions for a list of names passed in
- * nameCount and names */
-extern SDL_bool SDL_Vulkan_GetInstanceExtensions_Helper(unsigned *userCount,
-                                                        const char **userNames,
-                                                        unsigned nameCount,
-                                                        const char *const *names);
+#if SDL_VIDEO_VULKAN_SURFACE && SDL_VIDEO_DRIVER_MIR
+
+int MIR_Vulkan_LoadLibrary(_THIS, const char *path);
+void MIR_Vulkan_UnloadLibrary(_THIS);
+SDL_bool MIR_Vulkan_GetInstanceExtensions(_THIS,
+                                          SDL_Window *window,
+                                          unsigned *count,
+                                          const char **names);
+SDL_bool MIR_Vulkan_CreateSurface(_THIS,
+                                  SDL_Window *window,
+                                  VkInstance instance,
+                                  VkSurfaceKHR *surface);
 
 #endif
 
-#endif
+#endif /* _SDL_mirvulkan_h */
+
+/* vi: set ts=4 sw=4 expandtab: */

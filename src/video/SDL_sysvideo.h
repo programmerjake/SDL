@@ -26,6 +26,7 @@
 #include "SDL_messagebox.h"
 #include "SDL_shape.h"
 #include "SDL_thread.h"
+#include "SDL_vulkan.h"
 
 /* The SDL video driver */
 
@@ -267,7 +268,8 @@ struct SDL_VideoDevice
     int (*Vulkan_LoadLibrary) (_THIS, const char *path);
     void (*Vulkan_UnloadLibrary) (_THIS);
     SDL_bool (*Vulkan_GetInstanceExtensions) (_THIS, SDL_Window *window, unsigned *count, const char **names);
-    SDL_bool (*Vulkan_CreateSurface) (_THIS, SDL_Window *window, SDL_vulkanInstance instance, SDL_vulkanSurface *surface);
+    SDL_bool (*Vulkan_CreateSurface) (_THIS, SDL_Window *window, VkInstance instance, VkSurfaceKHR *surface);
+    void (*Vulkan_GetDrawableSize) (_THIS, SDL_Window * window, int *w, int *h);
 
     /* * * */
     /*
@@ -392,57 +394,24 @@ typedef struct VideoBootStrap
     SDL_VideoDevice *(*create) (int devindex);
 } VideoBootStrap;
 
-#if SDL_VIDEO_DRIVER_COCOA
+/* Not all of these are available in a given build. Use #ifdefs, etc. */
 extern VideoBootStrap COCOA_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_X11
 extern VideoBootStrap X11_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_MIR
 extern VideoBootStrap MIR_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_DIRECTFB
 extern VideoBootStrap DirectFB_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_WINDOWS
 extern VideoBootStrap WINDOWS_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_WINRT
 extern VideoBootStrap WINRT_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_HAIKU
 extern VideoBootStrap HAIKU_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_PANDORA
 extern VideoBootStrap PND_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_UIKIT
 extern VideoBootStrap UIKIT_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_ANDROID
 extern VideoBootStrap Android_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_PSP
 extern VideoBootStrap PSP_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_RPI
 extern VideoBootStrap RPI_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_DUMMY
 extern VideoBootStrap DUMMY_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_WAYLAND
 extern VideoBootStrap Wayland_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_NACL
 extern VideoBootStrap NACL_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_VIVANTE
 extern VideoBootStrap VIVANTE_bootstrap;
-#endif
-#if SDL_VIDEO_DRIVER_EMSCRIPTEN
 extern VideoBootStrap Emscripten_bootstrap;
-#endif
 
 extern SDL_VideoDevice *SDL_GetVideoDevice(void);
 extern int SDL_AddBasicVideoDisplay(const SDL_DisplayMode * desktop_mode);
@@ -470,6 +439,13 @@ extern SDL_Window * SDL_GetFocusWindow(void);
 extern SDL_bool SDL_ShouldAllowTopmost(void);
 
 extern float SDL_ComputeDiagonalDPI(int hpix, int vpix, float hinches, float vinches);
+
+extern void SDL_OnApplicationWillTerminate();
+extern void SDL_OnApplicationDidReceiveMemoryWarning();
+extern void SDL_OnApplicationWillResignActive();
+extern void SDL_OnApplicationDidEnterBackground();
+extern void SDL_OnApplicationWillEnterForeground();
+extern void SDL_OnApplicationDidBecomeActive();
 
 #endif /* SDL_sysvideo_h_ */
 
