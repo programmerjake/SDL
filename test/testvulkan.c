@@ -1146,6 +1146,7 @@ int main(int argc, char *argv[])
     /* Set Vulkan parameters */
     state->window_flags |= SDL_WINDOW_VULKAN;
     state->num_windows = 1;
+    state->skip_renderer = 1;
 
     if(!SDLTest_CommonInit(state))
     {
