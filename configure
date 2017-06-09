@@ -21613,12 +21613,52 @@ fi
 
 CheckVulkan()
 {
+    have_vulkan_hdr=no
     if test x$enable_video = xyes -a x$enable_video_vulkan = xyes; then
-        vsdk_include_dir="${VULKAN_SDK}/include"
-        vulkan_header="vulkan/vulkan.h"
-        save_CPPFLAGS="$CPPFLAGS"
-        CPPFLAGS="${save_CPPFLAGS} -I$vsdk_include_dir"
-        as_ac_Header=`$as_echo "ac_cv_header_$vulkan_header" | $as_tr_sh`
+        case "$host" in
+            *-*-androideabi*)
+                cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+                  #if defined(__ANDROID__) && defined(__ARM_EABI__) && !defined(__ARM_ARCH_7A__)
+                  #error Vulkan doesn't work on this configuration
+                  #endif
+                  int main()
+                  {
+                     return 0;
+                  }
+
+int
+main ()
+{
+
+                    enable_video_vulkan=no
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+                ;;
+            *)
+                ;;
+        esac
+        if test x$enable_video_vulkan = xno; then
+            # For reasons I am totally unable to see, I get an undefined macro error if
+            # I put this in the AC_TRY_COMPILE.
+            { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Sorry, Vulkan does not work on this configuration." >&5
+$as_echo "$as_me: WARNING: Sorry, Vulkan does not work on this configuration." >&2;}
+        fi
+        if test x$enable_video_vulkan = xyes; then
+            vsdk_include_dir="${VULKAN_SDK}/include"
+            vulkan_header="vulkan/vulkan.h"
+            save_CPPFLAGS="$CPPFLAGS"
+            CPPFLAGS="${save_CPPFLAGS} -I$vsdk_include_dir"
+            as_ac_Header=`$as_echo "ac_cv_header_$vulkan_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$vulkan_header" "$as_ac_Header" "$ac_includes_default"
 if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
   have_vulkan_hdr=yes
@@ -21627,7 +21667,8 @@ else
 fi
 
 
-        CPPFLAGS="$save_CPPFLAGS"
+            CPPFLAGS="$save_CPPFLAGS"
+        fi
     fi
     if test x$have_vulkan_hdr = xyes; then
         # vulkan.h has been found in either $VULKAN_SDK/include or along the

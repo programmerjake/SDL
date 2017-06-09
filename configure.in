@@ -2253,15 +2253,41 @@ AC_HELP_STRING([--enable-video-vulkan], [include Vulkan surface support [[defaul
 dnl Find Vulkan Header
 CheckVulkan()
 {
+    have_vulkan_hdr=no
     if test x$enable_video = xyes -a x$enable_video_vulkan = xyes; then
-        vsdk_include_dir="${VULKAN_SDK}/include"
-        vulkan_header="vulkan/vulkan.h"
-        save_CPPFLAGS="$CPPFLAGS"
-        CPPFLAGS="${save_CPPFLAGS} -I$vsdk_include_dir"
-        AC_CHECK_HEADER($vulkan_header,
-                        have_vulkan_hdr=yes,
-                        have_vulkan_hdr=no)
-        CPPFLAGS="$save_CPPFLAGS"
+        case "$host" in
+            *-*-androideabi*)
+                AC_TRY_COMPILE([
+                  #if defined(__ANDROID__) && defined(__ARM_EABI__) && !defined(__ARM_ARCH_7A__)
+                  #error Vulkan doesn't work on this configuration
+                  #endif
+                  int main()
+                  {
+                     return 0;
+                  }
+                ],[
+                    enable_video_vulkan=no
+                ],[
+                ])
+                ;;
+            *)
+                ;;
+        esac
+        if test x$enable_video_vulkan = xno; then
+            # For reasons I am totally unable to see, I get an undefined macro error if
+            # I put this in the AC_TRY_COMPILE.
+            AC_MSG_WARN([Sorry, Vulkan does not work on this configuration.])
+        fi
+        if test x$enable_video_vulkan = xyes; then
+            vsdk_include_dir="${VULKAN_SDK}/include"
+            vulkan_header="vulkan/vulkan.h"
+            save_CPPFLAGS="$CPPFLAGS"
+            CPPFLAGS="${save_CPPFLAGS} -I$vsdk_include_dir"
+            AC_CHECK_HEADER($vulkan_header,
+                            have_vulkan_hdr=yes,
+                            have_vulkan_hdr=no)
+            CPPFLAGS="$save_CPPFLAGS"
+        fi
     fi
     if test x$have_vulkan_hdr = xyes; then
         # vulkan.h has been found in either $VULKAN_SDK/include or along the
