@@ -42,6 +42,7 @@ int X11_Vulkan_LoadLibrary(_THIS, const char *path)
     SDL_bool hasXlibSurfaceExtension = SDL_FALSE;
     SDL_bool hasXCBSurfaceExtension = SDL_FALSE;
     PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = NULL;
+    Uint32 i;
     if(_this->vulkan_config.loader_handle)
         return SDL_SetError("Vulkan already loaded");
 
@@ -70,7 +71,7 @@ int X11_Vulkan_LoadLibrary(_THIS, const char *path)
         &extensionCount);
     if(!extensions)
         goto fail;
-    for(Uint32 i = 0; i < extensionCount; i++)
+    for(i = 0; i < extensionCount; i++)
     {
         if(SDL_strcmp(VK_KHR_SURFACE_EXTENSION_NAME, extensions[i].extensionName) == 0)
             hasSurfaceExtension = SDL_TRUE;
