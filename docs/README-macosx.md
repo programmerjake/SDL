@@ -13,7 +13,7 @@ Preparation
 
 1.  Either download [Molten](https://moltengl.com/free-trial/) and unzip it or download the Vulkan headers from Khronos's [Vulkan-Docs](https://github.com/KhronosGroup/Vulkan-Docs/tree/1.0/src/vulkan) repo and put them in a directory hierarchy `include/vulkan`.
 2. Set a `VULKAN_SDK` variable in one of the ways described below. Its value should be either the `MoltenVK` directory within the unzipped Molten package or the parent of the `include/vulkan` hierarchy.
-	- If you are going to use the command line, set and export a `VULKAN_SDK` environment variable in your shell's start-up file, e.g. `.bash_profile`.
+	- If you are going to use the command line, set and export a `VULKAN_SDK` environment variable in your shell's start-up file, e.g. `~/.bash_profile`.
 	- If you are going to use CMake, either set and export a `VULKAN_SDK` environment variable before running `cmake` or set the `VULKAN_SDK` variable in `cmake-gui` and press *Configure*.
 	- If you are going to use the provided Xcode projects, set a `VULKAN_SDK` custom path in Xcode's preferences. Select *Custom Paths* on the *Locations* tab of preferences.
 
