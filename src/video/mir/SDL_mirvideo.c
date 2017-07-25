@@ -36,6 +36,7 @@
 #include "SDL_mirmouse.h"
 #include "SDL_miropengl.h"
 #include "SDL_mirvideo.h"
+#include "SDL_mirvulkan.h"
 
 #include "SDL_mirdyn.h"
 

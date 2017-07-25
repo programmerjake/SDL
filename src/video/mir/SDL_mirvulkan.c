@@ -132,7 +132,7 @@ SDL_bool MIR_Vulkan_CreateSurface(_THIS,
                                   VkInstance instance,
                                   VkSurfaceKHR *surface)
 {
-    SDL_WindowData *windowData = (SDL_WindowData *)window->driverdata;
+    MIR_Window *windowData = (MIR_Window *)window->driverdata;
     PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
         (PFN_vkGetInstanceProcAddr)_this->vulkan_config.vkGetInstanceProcAddr;
     PFN_vkCreateMirSurfaceKHR vkCreateMirSurfaceKHR =
