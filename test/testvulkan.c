@@ -981,6 +981,7 @@ static SDL_bool createNewSwapchainAndSwapchainSpecificStuff(void)
 
 static void initVulkan(void)
 {
+    SDL_Vulkan_LoadLibrary(NULL);
     SDL_memset(&vulkanContext, 0, sizeof(VulkanContext));
     loadGlobalFunctions();
     createInstance();
@@ -1010,6 +1011,7 @@ static void shutdownVulkan(void)
     if(vulkanContext.instance && vkDestroyInstance)
         vkDestroyInstance(vulkanContext.instance, NULL);
     SDL_free(vulkanContext.surfaceFormats);
+    SDL_Vulkan_UnloadLibrary();
 }
 
 static SDL_bool render(void)
