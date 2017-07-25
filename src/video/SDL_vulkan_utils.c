@@ -112,10 +112,19 @@ VkExtensionProperties *SDL_Vulkan_CreateInstanceExtensionsList(
     Uint32 count = 0;
     VkResult result = vkEnumerateInstanceExtensionProperties(NULL, &count, NULL);
     VkExtensionProperties *retval;
-    if(result != VK_SUCCESS)
+    if(result == VK_ERROR_INCOMPATIBLE_DRIVER)
     {
         SDL_SetError(
-            "getting Vulkan extensions failed: vkEnumerateInstanceExtensionProperties returned "
+            "You probably don't have a working Vulkan driver installed: getting Vulkan "
+            "extensions failed: vkEnumerateInstanceExtensionProperties returned %s(%d)",
+            SDL_Vulkan_GetResultString(result),
+            (int)result);
+        return NULL;
+    }
+    else if(result != VK_SUCCESS)
+    {
+        SDL_SetError(
+            "Getting Vulkan extensions failed: vkEnumerateInstanceExtensionProperties returned "
             "%s(%d)",
             SDL_Vulkan_GetResultString(result),
             (int)result);
@@ -141,7 +150,7 @@ VkExtensionProperties *SDL_Vulkan_CreateInstanceExtensionsList(
     if(result != VK_SUCCESS)
     {
         SDL_SetError(
-            "getting Vulkan extensions failed: vkEnumerateInstanceExtensionProperties returned "
+            "Getting Vulkan extensions failed: vkEnumerateInstanceExtensionProperties returned "
             "%s(%d)",
             SDL_Vulkan_GetResultString(result),
             (int)result);
@@ -164,7 +173,7 @@ SDL_bool SDL_Vulkan_GetInstanceExtensions_Helper(unsigned *userCount,
         if(*userCount != nameCount)
         {
             SDL_SetError(
-                "count doesn't match count from previous call of SDL_Vulkan_GetInstanceExtensions");
+                "Count doesn't match count from previous call of SDL_Vulkan_GetInstanceExtensions");
             return SDL_FALSE;
         }
         for(i = 0; i < nameCount; i++)
