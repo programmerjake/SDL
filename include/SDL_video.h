@@ -455,10 +455,18 @@ extern DECLSPEC Uint32 SDLCALL SDL_GetWindowPixelFormat(SDL_Window * window);
  *  If the window is created with the SDL_WINDOW_ALLOW_HIGHDPI flag, its size
  *  in pixels may differ from its size in screen coordinates on platforms with
  *  high-DPI support (e.g. iOS and Mac OS X). Use SDL_GetWindowSize() to query
- *  the client area's size in screen coordinates, and SDL_GL_GetDrawableSize()
- *  or SDL_GetRendererOutputSize() to query the drawable size in pixels.
+ *  the client area's size in screen coordinates, and SDL_GL_GetDrawableSize(),
+ *  SDL_Vulkan_GetDrawableSize(), or SDL_GetRendererOutputSize() to query the
+ *  drawable size in pixels.
+ *
+ *  If the window is created with any of the SDL_WINDOW_OPENGL or
+ *  SDL_WINDOW_VULKAN flags, then the corresponding LoadLibrary function
+ *  (SDL_GL_LoadLibrary or SDL_Vulkan_LoadLibrary) is called and the
+ *  corrensponding UnloadLibrary function is called by SDL_DestroyWindow().
  *
  *  \sa SDL_DestroyWindow()
+ *  \sa SDL_GL_LoadLibrary()
+ *  \sa SDL_Vulkan_LoadLibrary()
  */
 extern DECLSPEC SDL_Window * SDLCALL SDL_CreateWindow(const char *title,
                                                       int x, int y, int w,
