@@ -2647,6 +2647,9 @@ SDL_DestroyWindow(SDL_Window * window)
     if (window->flags & SDL_WINDOW_OPENGL) {
         SDL_GL_UnloadLibrary();
     }
+    if (window->flags & SDL_WINDOW_VULKAN) {
+        SDL_Vulkan_UnloadLibrary();
+    }
 
     display = SDL_GetDisplayForWindow(window);
     if (display->fullscreen_window == window) {
