@@ -74,8 +74,7 @@ typedef VkSurfaceKHR SDL_vulkanSurface; /* for compatibility with Tizen */
  *  \note If you specify a non-NULL \a path, you should retrieve all of the
  *        Vulkan functions used in your program from the dynamic library using
  *        \c SDL_Vulkan_GetVkGetInstanceProcAddr() unless you can guarantee
- *        \a path points to the same library which will be loaded by the
- *        Vulkan ICD.
+ *        \a path points to the same vulkan loader library that you linked to.
  *
  *  \note On Apple devices, if \a path is NULL, SDL will attempt to find
  *        the vkGetInstanceProcAddr address within all the mach-o images of
@@ -84,6 +83,13 @@ typedef VkSurfaceKHR SDL_vulkanSurface; /* for compatibility with Tizen */
  *        If it is not found then SDL will attempt to load \c libMoltenVK.dylib.
  *        Applications using the dylib alternative therefore do not need to do
  *        anything special when calling SDL.
+ *
+ *  \note On non-Apple devices, SDL expects you to either link dynamically or
+ *        not link to the Vulkan loader. This limitation may be removed in a
+ *        future version of SDL.
+ *
+ *  \note This function will fail if there are no working Vulkan drivers
+ *        installed.
  *
  *  \sa SDL_Vulkan_GetVkGetInstanceProcAddr()
  *  \sa SDL_Vulkan_UnloadLibrary()

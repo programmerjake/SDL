@@ -448,7 +448,7 @@ extern DECLSPEC Uint32 SDLCALL SDL_GetWindowPixelFormat(SDL_Window * window);
  *               ::SDL_WINDOW_HIDDEN,        ::SDL_WINDOW_BORDERLESS,
  *               ::SDL_WINDOW_RESIZABLE,     ::SDL_WINDOW_MAXIMIZED,
  *               ::SDL_WINDOW_MINIMIZED,     ::SDL_WINDOW_INPUT_GRABBED,
- *               ::SDL_WINDOW_ALLOW_HIGHDPI.
+ *               ::SDL_WINDOW_ALLOW_HIGHDPI, ::SDL_WINDOW_VULKAN.
  *
  *  \return The created window, or NULL if window creation failed.
  *
@@ -463,6 +463,9 @@ extern DECLSPEC Uint32 SDLCALL SDL_GetWindowPixelFormat(SDL_Window * window);
  *  SDL_WINDOW_VULKAN flags, then the corresponding LoadLibrary function
  *  (SDL_GL_LoadLibrary or SDL_Vulkan_LoadLibrary) is called and the
  *  corrensponding UnloadLibrary function is called by SDL_DestroyWindow().
+ *
+ *  If SDL_WINDOW_VULKAN is specified and there isn't a working Vulkan driver,
+ *  SDL_CreateWindow() will fail because SDL_Vulkan_LoadLibrary() will fail.
  *
  *  \sa SDL_DestroyWindow()
  *  \sa SDL_GL_LoadLibrary()
