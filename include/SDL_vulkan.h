@@ -84,9 +84,9 @@ typedef VkSurfaceKHR SDL_vulkanSurface; /* for compatibility with Tizen */
  *        Applications using the dylib alternative therefore do not need to do
  *        anything special when calling SDL.
  *
- *  \note On non-Apple devices, SDL expects you to either link dynamically or
- *        not link to the Vulkan loader. This limitation may be removed in a
- *        future version of SDL.
+ *  \note On non-Apple devices, SDL requires you to either not link to the
+ *        Vulkan loader or link to a dynamic library version. This limitation
+ *        may be removed in a future version of SDL.
  *
  *  \note This function will fail if there are no working Vulkan drivers
  *        installed.

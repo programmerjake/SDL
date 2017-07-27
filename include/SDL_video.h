@@ -94,7 +94,6 @@ typedef struct SDL_Window SDL_Window;
  *
  *  \sa SDL_GetWindowFlags()
  */
-typedef enum
 {
     /* !!! FIXME: change this to name = (1<<x). */
     SDL_WINDOW_FULLSCREEN = 0x00000001,         /**< fullscreen window */
@@ -466,6 +465,10 @@ extern DECLSPEC Uint32 SDLCALL SDL_GetWindowPixelFormat(SDL_Window * window);
  *
  *  If SDL_WINDOW_VULKAN is specified and there isn't a working Vulkan driver,
  *  SDL_CreateWindow() will fail because SDL_Vulkan_LoadLibrary() will fail.
+ *
+ *  \note On non-Apple devices, SDL requires you to either not link to the
+ *        Vulkan loader or link to a dynamic library version. This limitation
+ *        may be removed in a future version of SDL.
  *
  *  \sa SDL_DestroyWindow()
  *  \sa SDL_GL_LoadLibrary()
