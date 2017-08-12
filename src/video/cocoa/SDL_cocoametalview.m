@@ -143,20 +143,11 @@ Cocoa_Mtl_GetDrawableSize(SDL_Window * window, int * w, int * h)
     NSView *view = data->nswindow.contentView;
     SDL_cocoametalview* metalview = [view viewWithTag:METALVIEW_TAG];
     if (metalview) {
-#if 1
         CAMetalLayer *layer = (CAMetalLayer*)metalview.layer;
         assert(layer != NULL);
         if (w)
             *w = layer.drawableSize.width;
         if (h)
             *h = layer.drawableSize.height;
-#else
-        /* Fallback in case the above doesn't work. */
-        NSSize size = [view convertRectToBacking:[view bounds]].size;
-        if (w)
-            *w = size.width;
-        if (h)
-            *h = size.height;
-#endif
     }
 }
