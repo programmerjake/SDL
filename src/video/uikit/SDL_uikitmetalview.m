@@ -38,13 +38,11 @@
 #include "SDL_loadso.h"
 #include <dlfcn.h>
 
-typedef id <MTLDevice> __nullable (*PFN_MTLCreateSystemDefaultDevice)(void);
-static PFN_MTLCreateSystemDefaultDevice MtlCreateSystemDefaultDevice;
-
 static void* loader_handle;
 
 @implementation SDL_uikitmetalview
 
+/* Returns a Metal-compatible layer. */
 + (Class)layerClass
 {
     return [CAMetalLayer class];
@@ -57,10 +55,6 @@ static void* loader_handle;
     if ((self = [super initWithFrame:frame])) {
         /* Resize properly when rotated. */
         self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-
-        _metalLayer = (CAMetalLayer *) self.layer;
-        _metalLayer.opaque = YES;
-        _metalLayer.device = MtlCreateSystemDefaultDevice();
 
         /* Set the appropriate scale (for retina display support) */
         self.contentScaleFactor = scale;
@@ -85,36 +79,10 @@ static void* loader_handle;
     size.width  *= self.contentScaleFactor;
     size.height *= self.contentScaleFactor;
 
-    _metalLayer.drawableSize = size;
+    ((CAMetalLayer *) self.layer).drawableSize = size;
 }
 
 @end
-
-int UIKit_Mtl_LoadLibrary(const char *path)
-{
-    if (MtlCreateSystemDefaultDevice) {
-        SDL_SetError("Metal already loaded.");
-        return -1;
-    }
-    loader_handle = SDL_LoadObject("Metal.framework/Metal");
-    if (!loader_handle)
-        return -1;        
-    MtlCreateSystemDefaultDevice =
-            SDL_LoadFunction(loader_handle, "MTLCreateSystemDefaultDevice");
-    if (!MtlCreateSystemDefaultDevice) {
-        UIKit_Mtl_UnloadLibrary();
-        return -1;
-    }
-    return 0;
-}
-
-void UIKit_Mtl_UnloadLibrary()
-{
-    if (loader_handle) {
-        SDL_UnloadObject(loader_handle);
-        loader_handle = NULL;
-    }
-}
 
 SDL_uikitmetalview*
 UIKit_Mtl_AddMetalView(SDL_Window* window)
@@ -122,8 +90,6 @@ UIKit_Mtl_AddMetalView(SDL_Window* window)
     SDL_WindowData *data = (__bridge SDL_WindowData *)window->driverdata;
     SDL_uikitview *view = (SDL_uikitview*)data.uiwindow.rootViewController.view;
     CGFloat scale = 1.0;
-    
-    SDL_assert(loader_handle != 0 && MtlCreateSystemDefaultDevice != 0);
     
     if (window->flags & SDL_WINDOW_ALLOW_HIGHDPI) {
         /* Set the scale to the natural scale factor of the screen - the
@@ -169,8 +135,6 @@ UIKit_Mtl_GetDrawableSize(SDL_Window * window, int * w, int * h)
     if (metalview) {
         CAMetalLayer *layer = (CAMetalLayer*)metalview.layer;
         assert(layer != NULL);
-        // XXX Something is setting drawable size back to the size in points.
-        // Possiby a bug in MoltenVK. May need to * metalview.contentScaleFactor
         if (w)
             *w = layer.drawableSize.width;
         if (h)

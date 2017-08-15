@@ -39,7 +39,6 @@
 #define METALVIEW_TAG 255
 
 @interface SDL_cocoametalview : NSView {
-    CAMetalLayer* _metalLayer;
     NSInteger _tag;
     bool _useHighDPI;
 }
@@ -47,14 +46,10 @@
 - (instancetype)initWithFrame:(NSRect)frame
                    useHighDPI:(bool)useHighDPI;
 
-@property (retain, nonatomic) CAMetalLayer *metalLayer;
 /* Override superclass tag so this class can set it. */
 @property (assign, readonly) NSInteger tag;
 
 @end
-
-int Cocoa_Mtl_LoadLibrary(const char *path);
-void Cocoa_Mtl_UnloadLibrary();
 
 SDL_cocoametalview* Cocoa_Mtl_AddMetalView(SDL_Window* window);
 
