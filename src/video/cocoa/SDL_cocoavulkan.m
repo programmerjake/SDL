@@ -130,9 +130,6 @@ int Cocoa_Vulkan_LoadLibrary(_THIS, const char *path)
                      VK_MVK_MACOS_SURFACE_EXTENSION_NAME "extension");
         goto fail;
     }
-    if (Cocoa_Mtl_LoadLibrary(NULL) < 0)
-        goto fail;
-    
     return 0;
 
 fail:
@@ -148,7 +145,6 @@ void Cocoa_Vulkan_UnloadLibrary(_THIS)
         if (_this->vulkan_config.loader_handle != DEFAULT_HANDLE)
             SDL_UnloadObject(_this->vulkan_config.loader_handle);
         _this->vulkan_config.loader_handle = NULL;
-        Cocoa_Mtl_UnloadLibrary();
     }
 }
 

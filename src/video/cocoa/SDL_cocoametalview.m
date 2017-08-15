@@ -32,20 +32,24 @@
 #include "SDL_loadso.h"
 #include <dlfcn.h>
 
-typedef id <MTLDevice> __nullable (*PFN_MTLCreateSystemDefaultDevice)(void);
-static PFN_MTLCreateSystemDefaultDevice MtlCreateSystemDefaultDevice;
-
-static void* loader_handle;
 @implementation SDL_cocoametalview
 
-@synthesize metalLayer = _metalLayer;
 /* The synthesized getter should be called by super's viewWithTag. */
 @synthesize tag = _tag;
 
+/* Return a Metal-compatible layer. */
 + (Class)layerClass
 {
   return [CAMetalLayer class];
 }
+
+/* Indicate the view wants to draw using a backing layer instead of drawRect. */
+-(BOOL) wantsUpdateLayer { return YES; }
+
+/* When the wantsLayer property is set to YES, this method will be invoked to
+ * return a layer instance.
+ */
+-(CALayer*) makeBackingLayer { return [self.class.layerClass layer]; }
 
 - (instancetype)initWithFrame:(NSRect)frame
                    useHighDPI:(bool)useHighDPI
@@ -56,21 +60,7 @@ static void* loader_handle;
     self.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
     _tag = METALVIEW_TAG;
       
-    // There is a contentsScale property.
-    
-    _metalLayer = [CAMetalLayer layer];
-    _metalLayer.framebufferOnly = YES;
-    _metalLayer.opaque = YES;
-    _metalLayer.device = MtlCreateSystemDefaultDevice();
     _useHighDPI = useHighDPI;
-    if (_useHighDPI) {
-        /* Isn't there a better way to convert from NSSize to CGSize? */
-        NSSize size = [self convertRectToBacking:[self bounds]].size;
-        CGSize cgsize = *(CGSize*)&size;
-        _metalLayer.drawableSize = cgsize;
-    }
-    [self setLayer:_metalLayer];
-    [self setWantsLayer:YES];
     [self updateDrawableSize];
   }
   
@@ -87,46 +77,19 @@ static void* loader_handle;
 {
     if (_useHighDPI) {
         NSSize size = [self convertRectToBacking:[self bounds]].size;
+         /* Isn't there a better way to convert from NSSize to CGSize? */
         CGSize cgsize = *(CGSize*)&size;
-        _metalLayer.drawableSize = cgsize;
+        ((CAMetalLayer *) self.layer).drawableSize = cgsize;
     }
 }
 
 @end
-
-int Cocoa_Mtl_LoadLibrary(const char *path)
-{
-    if (MtlCreateSystemDefaultDevice) {
-        SDL_SetError("Metal already loaded.");
-        return -1;
-    }
-    loader_handle = SDL_LoadObject("Metal.framework/Metal");
-    if (!loader_handle)
-        return -1;
-    MtlCreateSystemDefaultDevice =
-            SDL_LoadFunction(loader_handle, "MTLCreateSystemDefaultDevice");
-    if (!MtlCreateSystemDefaultDevice) {
-        Cocoa_Mtl_UnloadLibrary();
-        return -1;
-    }
-    return 0;
-}
-
-void Cocoa_Mtl_UnloadLibrary()
-{
-    if (loader_handle) {
-        SDL_UnloadObject(loader_handle);
-        loader_handle = NULL;
-    }
-}
 
 SDL_cocoametalview*
 Cocoa_Mtl_AddMetalView(SDL_Window* window)
 {
     SDL_WindowData *data = (SDL_WindowData *)window->driverdata;
     NSView *view = data->nswindow.contentView;
-
-    SDL_assert(loader_handle != 0 && MtlCreateSystemDefaultDevice != 0);    
 
     SDL_cocoametalview *metalview
         = [[SDL_cocoametalview alloc] initWithFrame:view.frame

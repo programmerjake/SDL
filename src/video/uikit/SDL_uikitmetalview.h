@@ -44,12 +44,7 @@
                         scale:(CGFloat)scale
                         tag:(int)tag;
 
-@property (retain, nonatomic) CAMetalLayer *metalLayer;
-
 @end
-
-int UIKit_Mtl_LoadLibrary(const char *path);
-void UIKit_Mtl_UnloadLibrary();
 
 SDL_uikitmetalview* UIKit_Mtl_AddMetalView(SDL_Window* window);
 

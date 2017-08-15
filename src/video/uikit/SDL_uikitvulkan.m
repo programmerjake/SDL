@@ -134,8 +134,6 @@ int UIKit_Vulkan_LoadLibrary(_THIS, const char *path)
                      VK_MVK_IOS_SURFACE_EXTENSION_NAME "extension");
         goto fail;
     }
-    if (UIKit_Mtl_LoadLibrary(NULL) < 0)
-        goto fail;
 
     return 0;
 
@@ -151,7 +149,6 @@ void UIKit_Vulkan_UnloadLibrary(_THIS)
         if (_this->vulkan_config.loader_handle != DEFAULT_HANDLE)
             SDL_UnloadObject(_this->vulkan_config.loader_handle);
         _this->vulkan_config.loader_handle = NULL;
-        UIKit_Mtl_UnloadLibrary();
     }
 }
 
